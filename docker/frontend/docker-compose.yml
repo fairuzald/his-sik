@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: ../../fe
+      dockerfile: Dockerfile
+    container_name: his-frontend
+    command: npm run dev
+    environment:
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+    ports:
+      - '${FRONTEND_PORT:-3000}:3000'
+    volumes:
+      - ../../fe:/app
+      - /app/node_modules
+      - /app/.next
+    restart: unless-stopped
+    networks:
+      - his_sik_network

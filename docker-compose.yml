@@ -1,0 +1,72 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    extends:
+      file: docker/postgres/docker-compose.yml
+      service: postgres
+    env_file:
+      - .env
+
+  # Redis Cache
+  redis:
+    extends:
+      file: docker/redis/docker-compose.yml
+      service: redis
+    env_file:
+      - .env
+
+  # MinIO Object Storage
+  minio:
+    extends:
+      file: docker/minio/docker-compose.yml
+      service: minio
+    env_file:
+      - .env
+
+  # FastAPI Backend Application
+  app:
+    extends:
+      file: docker/app/docker-compose.yml
+      service: app
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+
+  # # Next.js Frontend (optional)
+  # frontend:
+  #   extends:
+  #     file: docker/frontend/docker-compose.yml
+  #     service: frontend
+  #   env_file:
+  #     - .env
+  #   depends_on:
+  #     - app
+  #   profiles:
+  #     - with-frontend
+
+  # Dozzle - Real-time log viewer (optional)
+  dozzle:
+    extends:
+      file: docker/dozzle/docker-compose.yml
+      service: dozzle
+    env_file:
+      - .env
+    profiles:
+      - with-monitoring
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
+  app_logs:
+
+networks:
+  his_sik_network:
+    driver: bridge
+    name: his_sik_network

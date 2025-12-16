@@ -1,0 +1,29 @@
+dist/
+build/
+
+node_modules/
+
+# Misc
+.DS_Store
+.env
+.env.*
+!.env.example
+
+# Cache
+.cache/
+.eslintcache
+
+# Vercel
+.vercel/
+.next/
+
+# Coverage
+coverage/
+
+# SDK (generated files)
+src/sdk/
+**/sdk/
+
+**.yaml
+**.yml
+tsconfig.json
