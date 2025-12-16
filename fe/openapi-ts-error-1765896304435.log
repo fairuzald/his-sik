@@ -1,0 +1,12 @@
+Error opening file "/home/fairuz/Documents/SIK/tubes/his-fe/fe/sdk/output/openapi.json" 
+ENOENT: no such file or directory, open '/home/fairuz/Documents/SIK/tubes/his-fe/fe/sdk/output/openapi.json'
+ResolverError: Error opening file "/home/fairuz/Documents/SIK/tubes/his-fe/fe/sdk/output/openapi.json" 
+ENOENT: no such file or directory, open '/home/fairuz/Documents/SIK/tubes/his-fe/fe/sdk/output/openapi.json'
+    at Object.handler (/home/fairuz/Documents/SIK/tubes/his-fe/fe/node_modules/@hey-api/json-schema-ref-parser/dist/lib/resolvers/file.js:58:19)
+    at async $RefParser.parse (/home/fairuz/Documents/SIK/tubes/his-fe/fe/node_modules/@hey-api/json-schema-ref-parser/dist/lib/index.js:195:17)
+    at async $RefParser.bundle (/home/fairuz/Documents/SIK/tubes/his-fe/fe/node_modules/@hey-api/json-schema-ref-parser/dist/lib/index.js:122:9)
+    at async ci (/home/fairuz/Documents/SIK/tubes/his-fe/fe/node_modules/@hey-api/openapi-ts/dist/index.cjs:12:1928)
+    at async ho (/home/fairuz/Documents/SIK/tubes/his-fe/fe/node_modules/@hey-api/openapi-ts/dist/index.cjs:14:95801)
+    at async Promise.all (index 0)
+    at async Ej (/home/fairuz/Documents/SIK/tubes/his-fe/fe/node_modules/@hey-api/openapi-ts/dist/index.cjs:1311:4503)
+    at async start (/home/fairuz/Documents/SIK/tubes/his-fe/fe/node_modules/@hey-api/openapi-ts/bin/index.cjs:131:21)

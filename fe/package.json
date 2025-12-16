@@ -11,7 +11,9 @@
     "prepare": "husky",
     "changeset": "changeset",
     "changeset:version": "changeset version",
-    "changeset:publish": "changeset publish"
+    "changeset:publish": "changeset publish",
+    "generate-sdk": "openapi-ts",
+    "update-api": "bash scripts/update-api.sh"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
