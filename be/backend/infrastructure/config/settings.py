@@ -9,7 +9,7 @@ class Settings(BaseSettings):
 
     # Application
     PROJECT_NAME: str = "HIS Backend"
-    API_V1_STR: str = "/api/v1"
+    API_V1_STR: str = "/api"
     DEBUG: bool = False
 
     # Database
