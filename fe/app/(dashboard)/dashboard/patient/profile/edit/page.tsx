@@ -1,25 +1,106 @@
 "use client";
 
 import { H2, P } from "@/components/elements/typography";
-import { PatientForm } from "@/components/forms/patient-form";
+import {
+  ProfileForm,
+  ProfileFormValues,
+} from "@/components/forms/profile-form";
 import { Button } from "@/components/ui/button";
-import { Patient, patients } from "@/data/mock-data";
-import { ArrowLeft } from "lucide-react";
+import {
+  getMyProfileApiProfileMeGet,
+  updatePatientProfileApiProfilePatientPut,
+} from "@/sdk/output/sdk.gen";
+import {
+  PatientProfileDao,
+  UpdatePatientProfileDto,
+} from "@/sdk/output/types.gen";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 export default function EditMyProfilePage() {
   const router = useRouter();
-  // In a real app, we would get the logged-in user's patient ID from session/context
-  const patient = patients[0];
+  const [initialData, setInitialData] =
+    useState<Partial<ProfileFormValues> | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleSubmit = (data: Partial<Patient>) => {
-    // In a real app, this would be an API call
-    console.log("Updating profile:", data);
-    toast.success("Profile updated successfully");
-    router.push("/dashboard/patient/profile");
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const response = await getMyProfileApiProfileMeGet();
+        if (response.data?.success && response.data.data) {
+          const user = response.data.data;
+          const details = user.details as PatientProfileDao | undefined;
+
+          // Map to form values
+          setInitialData({
+            full_name: user.full_name,
+            email: user.email || "",
+            phone_number: user.phone_number || "",
+            nik: details?.nik || "",
+            bpjs_number: details?.bpjs_number || "",
+            date_of_birth: details?.date_of_birth || "",
+            gender: details?.gender || undefined,
+            blood_type: details?.blood_type || undefined,
+            address: details?.address || "",
+            emergency_contact_name: details?.emergency_contact_name || "",
+            emergency_contact_phone: details?.emergency_contact_phone || "",
+          });
+        }
+      } catch (error) {
+        console.error("Failed to fetch profile", error);
+        toast.error("Failed to load profile data");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, []);
+
+  const handleSubmit = async (data: ProfileFormValues) => {
+    setIsSaving(true);
+    try {
+      // Safe cast or mapping if needed. ProfileFormValues matches UpdatePatientProfileDto closely.
+      const updateData: UpdatePatientProfileDto = {
+        ...data,
+        // Ensure nulls are handled if API expects explicit nulls for clearing,
+        // but usually strings are fine. SDK types allow 'string | null'.
+      };
+
+      const response = await updatePatientProfileApiProfilePatientPut({
+        body: updateData,
+      });
+
+      if (response.data?.success) {
+        toast.success("Profile updated successfully");
+        router.push("/dashboard/patient/profile");
+        router.refresh();
+      } else {
+        toast.error(response.data?.message || "Failed to update profile");
+      }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      if (error?.response?.data?.message) {
+        toast.error(error.response.data.message);
+      } else {
+        toast.error("An unexpected error occurred");
+      }
+    } finally {
+      setIsSaving(false);
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col space-y-6 p-6">
@@ -40,11 +121,13 @@ export default function EditMyProfilePage() {
       </div>
 
       <div className="w-full">
-        <PatientForm
-          initialData={patient}
-          onSubmit={handleSubmit}
-          onCancel={() => router.back()}
-        />
+        {initialData && (
+          <ProfileForm
+            defaultValues={initialData}
+            onSubmit={handleSubmit}
+            isLoading={isSaving}
+          />
+        )}
       </div>
     </div>
   );

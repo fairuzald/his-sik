@@ -5,14 +5,29 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataTable } from "@/components/ui/data-table";
-import { InvoiceItem, invoices } from "@/data/mock-data";
+import { safeApiCall } from "@/lib/api-handler";
+import { getInvoiceApiInvoicesInvoiceIdGet } from "@/sdk/output/sdk.gen";
+import { InvoiceDto, InvoiceItemDto } from "@/sdk/output/types.gen";
 import { ColumnDef } from "@tanstack/react-table";
-import { ArrowLeft, Calendar, CreditCard, Download } from "lucide-react";
+import { format } from "date-fns";
+import {
+  ArrowLeft,
+  Calendar,
+  CreditCard,
+  Download,
+  Loader2,
+} from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
+// removed toast import
 
-const columns: ColumnDef<InvoiceItem>[] = [
-  { accessorKey: "description", header: "Description" },
+const columns: ColumnDef<InvoiceItemDto>[] = [
+  {
+    accessorKey: "description",
+    header: "Description",
+    cell: ({ row }) => row.original.description || "Item",
+  },
   {
     accessorKey: "subtotal",
     header: () => <div className="text-right">Amount</div>,
@@ -26,7 +41,36 @@ const columns: ColumnDef<InvoiceItem>[] = [
 
 export default function InvoiceDetailPage() {
   const params = useParams();
-  const invoice = invoices.find(i => i.id === params.id) || invoices[0]; // Fallback
+  const id = params.id as string;
+  const [invoice, setInvoice] = useState<InvoiceDto | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchInvoice = async () => {
+      const result = await safeApiCall(
+        getInvoiceApiInvoicesInvoiceIdGet({
+          path: { invoice_id: id },
+        }),
+        {
+          errorMessage: "Failed to load invoice details",
+        }
+      );
+
+      if (result) {
+        setInvoice(result);
+      }
+      setIsLoading(false);
+    };
+    if (id) fetchInvoice();
+  }, [id]);
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   if (!invoice) return <div>Invoice not found</div>;
 
@@ -42,7 +86,7 @@ export default function InvoiceDetailPage() {
           <H2 className="text-primary text-2xl font-bold tracking-tight">
             Invoice Details
           </H2>
-          <P className="text-muted-foreground">ID: {invoice.invoice_number}</P>
+          <P className="text-muted-foreground">ID: {invoice.id}</P>
         </div>
       </div>
 
@@ -55,20 +99,22 @@ export default function InvoiceDetailPage() {
               </CardTitle>
             </div>
             <Badge
-              variant={invoice.status === "Paid" ? "default" : "destructive"}
+              variant={
+                invoice.payment_status === "paid" ? "default" : "destructive"
+              }
               className={
-                invoice.status === "Paid"
-                  ? "bg-green-500 hover:bg-green-600"
-                  : ""
+                invoice.payment_status === "paid"
+                  ? "bg-green-500 capitalize hover:bg-green-600"
+                  : "capitalize"
               }
             >
-              {invoice.status}
+              {invoice.payment_status}
             </Badge>
           </CardHeader>
           <CardContent className="pt-6">
             <DataTable
               columns={columns}
-              data={invoice.items}
+              data={invoice.items || []}
               searchKey="description"
             />
             <div className="mt-4 flex justify-between border-t pt-4 font-bold">
@@ -92,11 +138,15 @@ export default function InvoiceDetailPage() {
                 <Calendar className="text-muted-foreground mt-0.5 h-5 w-5" />
                 <div>
                   <Small className="text-muted-foreground">Invoice Date</Small>
-                  <P className="font-medium">{invoice.invoice_datetime}</P>
+                  <P className="font-medium">
+                    {invoice.created_at
+                      ? format(new Date(invoice.created_at), "dd MMM yyyy")
+                      : "-"}
+                  </P>
                 </div>
               </div>
 
-              {invoice.status === "Unpaid" ? (
+              {invoice.payment_status === "unpaid" ? (
                 <Button className="mt-4 w-full gap-2">
                   <CreditCard className="h-4 w-4" />
                   Pay Now
