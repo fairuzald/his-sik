@@ -92,10 +92,12 @@ export default function ProcessLabOrderPage() {
         path: { order_id: params.id },
         body: {
           order_status: data.order_status,
-          result_value: data.result_value || null,
-          result_unit: data.result_unit || null,
-          interpretation: data.interpretation || null,
-          file: data.file, // SDK handles File object if FormData serializer is used
+          result: {
+            result_value: data.result_value || null,
+            result_unit: data.result_unit || null,
+            interpretation: data.interpretation || null,
+          },
+          // file: data.file, // SDK handles File object if FormData serializer is used (commented out in original)
         },
       }),
       { successMessage: "Lab order updated successfully" }

@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { RoleEnum } from "@/lib/enums";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
 import { useForm } from "react-hook-form";
@@ -41,7 +42,7 @@ const createSchema = userBaseSchema
     confirmPassword: z
       .string()
       .min(6, "Password must be at least 6 characters"),
-    role: z.string().optional(), // Role is optional for registration (default patient)
+    role: z.nativeEnum(RoleEnum).optional(), // Role is optional for registration (default patient)
   })
   .refine(data => data.password === data.confirmPassword, {
     message: "Passwords do not match",
@@ -53,7 +54,7 @@ const editSchema = userBaseSchema
   .extend({
     password: z.string().optional(),
     confirmPassword: z.string().optional(),
-    role: z.string().optional(),
+    role: z.nativeEnum(RoleEnum).optional(),
   })
   .refine(
     data => {
@@ -67,8 +68,7 @@ const editSchema = userBaseSchema
   );
 
 // Type inference
-// Type inference
-export type UserFormValues = z.infer<typeof editSchema>; // Use the looser type to accommodate both modes
+export type UserFormValues = z.infer<typeof editSchema>;
 
 interface UserFormProps {
   defaultValues?: Partial<UserFormValues>;
@@ -98,7 +98,7 @@ export function UserForm({
       phone_number: "",
       password: "",
       confirmPassword: "",
-      role: isAdmin ? "patient" : undefined,
+      role: isAdmin ? RoleEnum.PATIENT : undefined,
       ...defaultValues,
     },
   });
@@ -192,16 +192,11 @@ export function UserForm({
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="admin">Admin</SelectItem>
-                    <SelectItem value="doctor">Doctor</SelectItem>
-                    <SelectItem value="nurse">Nurse</SelectItem>
-                    <SelectItem value="registration">
-                      Registration Staff
-                    </SelectItem>
-                    <SelectItem value="pharmacy">Pharmacy Staff</SelectItem>
-                    <SelectItem value="lab">Lab Staff</SelectItem>
-                    <SelectItem value="cashier">Cashier</SelectItem>
-                    <SelectItem value="patient">Patient</SelectItem>
+                    {Object.values(RoleEnum).map(role => (
+                      <SelectItem key={role} value={role}>
+                        {role.charAt(0).toUpperCase() + role.slice(1)}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 <FormMessage />

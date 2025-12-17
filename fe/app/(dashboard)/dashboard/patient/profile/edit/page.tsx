@@ -6,9 +6,10 @@ import {
   ProfileFormValues,
 } from "@/components/forms/profile-form";
 import { Button } from "@/components/ui/button";
+import { safeApiCall } from "@/lib/api-handler";
 import {
   getMyProfileApiProfileMeGet,
-  updatePatientProfileApiProfilePatientPut,
+  updatePatientProfileApiProfilePatientPatch,
 } from "@/sdk/output/sdk.gen";
 import {
   PatientProfileDao,
@@ -18,7 +19,6 @@ import { ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
 
 export default function EditMyProfilePage() {
   const router = useRouter();
@@ -29,33 +29,27 @@ export default function EditMyProfilePage() {
 
   useEffect(() => {
     const fetchProfile = async () => {
-      try {
-        const response = await getMyProfileApiProfileMeGet();
-        if (response.data?.success && response.data.data) {
-          const user = response.data.data;
-          const details = user.details as PatientProfileDao | undefined;
+      const user = await safeApiCall(getMyProfileApiProfileMeGet());
 
-          // Map to form values
-          setInitialData({
-            full_name: user.full_name,
-            email: user.email || "",
-            phone_number: user.phone_number || "",
-            nik: details?.nik || "",
-            bpjs_number: details?.bpjs_number || "",
-            date_of_birth: details?.date_of_birth || "",
-            gender: details?.gender || undefined,
-            blood_type: details?.blood_type || undefined,
-            address: details?.address || "",
-            emergency_contact_name: details?.emergency_contact_name || "",
-            emergency_contact_phone: details?.emergency_contact_phone || "",
-          });
-        }
-      } catch (error) {
-        console.error("Failed to fetch profile", error);
-        toast.error("Failed to load profile data");
-      } finally {
-        setIsLoading(false);
+      if (user) {
+        const details = user.details as PatientProfileDao | undefined;
+
+        // Map to form values
+        setInitialData({
+          full_name: user.full_name,
+          email: user.email || "",
+          phone_number: user.phone_number || "",
+          nik: details?.nik || "",
+          bpjs_number: details?.bpjs_number || "",
+          date_of_birth: details?.date_of_birth || "",
+          gender: details?.gender || undefined,
+          blood_type: details?.blood_type || undefined,
+          address: details?.address || "",
+          emergency_contact_name: details?.emergency_contact_name || "",
+          emergency_contact_phone: details?.emergency_contact_phone || "",
+        });
       }
+      setIsLoading(false);
     };
 
     fetchProfile();
@@ -63,35 +57,25 @@ export default function EditMyProfilePage() {
 
   const handleSubmit = async (data: ProfileFormValues) => {
     setIsSaving(true);
-    try {
-      // Safe cast or mapping if needed. ProfileFormValues matches UpdatePatientProfileDto closely.
-      const updateData: UpdatePatientProfileDto = {
-        ...data,
-        // Ensure nulls are handled if API expects explicit nulls for clearing,
-        // but usually strings are fine. SDK types allow 'string | null'.
-      };
 
-      const response = await updatePatientProfileApiProfilePatientPut({
+    const updateData: UpdatePatientProfileDto = {
+      ...data,
+      // Ensure nulls are handled if API expects explicit nulls for clearing,
+      // but usually strings are fine. SDK types allow 'string | null'.
+    };
+
+    const result = await safeApiCall(
+      updatePatientProfileApiProfilePatientPatch({
         body: updateData,
-      });
+      }),
+      { successMessage: "Profile updated successfully" }
+    );
 
-      if (response.data?.success) {
-        toast.success("Profile updated successfully");
-        router.push("/dashboard/patient/profile");
-        router.refresh();
-      } else {
-        toast.error(response.data?.message || "Failed to update profile");
-      }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      if (error?.response?.data?.message) {
-        toast.error(error.response.data.message);
-      } else {
-        toast.error("An unexpected error occurred");
-      }
-    } finally {
-      setIsSaving(false);
+    if (result) {
+      router.push("/dashboard/patient/profile");
+      router.refresh();
     }
+    setIsSaving(false);
   };
 
   if (isLoading) {

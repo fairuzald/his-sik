@@ -4,11 +4,14 @@ import { Span } from "@/components/elements/typography";
 import { Button } from "@/components/ui/button";
 import { navItems } from "@/lib/nav";
 import { cn } from "@/lib/utils";
+import { logoutApiAuthLogoutPost } from "@/sdk/output/sdk.gen";
+import Cookies from "js-cookie";
 import { ChevronLeft, ChevronRight, LogOut } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
+import { toast } from "sonner";
 
 interface SidebarProps {
   role: string;
@@ -17,6 +20,7 @@ interface SidebarProps {
 
 export function Sidebar({ role, collapsible = true }: SidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const roleFromPath = pathname.split("/")[2];
   const currentRole = role || roleFromPath || "patient";
   const items = navItems[currentRole] || [];
@@ -25,6 +29,26 @@ export function Sidebar({ role, collapsible = true }: SidebarProps) {
   const toggleCollapse = () => {
     if (collapsible) {
       setIsCollapsed(!isCollapsed);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      const refreshToken = Cookies.get("refresh_token");
+      if (refreshToken) {
+        await logoutApiAuthLogoutPost({
+          body: { refresh_token: refreshToken },
+        });
+      }
+      toast.success("Logged out successfully");
+    } catch (error) {
+      console.error("Logout failed", error);
+      toast.error("Logout failed, causing local logout");
+    } finally {
+      // Always clear local state and redirect
+      Cookies.remove("access_token");
+      Cookies.remove("refresh_token");
+      router.push("/login"); // or /auth/login depending on route
     }
   };
 
@@ -127,6 +151,7 @@ export function Sidebar({ role, collapsible = true }: SidebarProps) {
       <div className="border-t p-4">
         <Button
           variant="ghost"
+          onClick={handleLogout}
           className={cn(
             "text-muted-foreground hover:text-destructive w-full gap-2",
             isCollapsed ? "flex justify-center px-0" : "justify-start"

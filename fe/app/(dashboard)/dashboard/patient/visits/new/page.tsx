@@ -3,6 +3,7 @@
 import { H2, P } from "@/components/elements/typography";
 import { PatientAppointmentForm } from "@/components/forms/patient-appointment-form";
 import { Button } from "@/components/ui/button";
+import { safeApiCall } from "@/lib/api-handler";
 import {
   createVisitApiVisitsPost,
   getMyProfileApiProfileMeGet,
@@ -26,42 +27,31 @@ export default function NewPatientVisitPage() {
 
   useEffect(() => {
     const fetchData = async () => {
-      try {
-        // 1. Get My Profile (for patient_id)
-        const profileRes = await getMyProfileApiProfileMeGet();
-        if (profileRes.data?.success && profileRes.data.data) {
-          setMyId(profileRes.data.data.id);
-        } else {
-          toast.error("Failed to verify user identity");
-          return;
-        }
-
-        // 2. Get Clinics
-        const clinicsRes = await listClinicsApiClinicsGet();
-        if (clinicsRes.data?.success && clinicsRes.data.data) {
-          setClinics(clinicsRes.data.data);
-        }
-
-        // 3. Get Doctors (Try fetching users, assuming maybe we can filter or just get all?)
-        // Note: This endpoint might be restricted. If so, doctors list will be empty.
-        try {
-          const usersRes = await listUsersApiUsersGet(); // We cant filter by query?
-          if (usersRes.data?.success && usersRes.data.data) {
-            const docList = usersRes.data.data.filter(u => u.role === "doctor");
-            setDoctors(docList);
-          }
-        } catch (err) {
-          console.warn(
-            "Could not fetch doctors. Permission might be denied.",
-            err
-          );
-        }
-      } catch (error) {
-        console.error("Error loading form data", error);
-        toast.error("Failed to load form data");
-      } finally {
-        setIsLoadingData(false);
+      // 1. Get My Profile (for patient_id)
+      const profile = await safeApiCall(getMyProfileApiProfileMeGet());
+      if (profile) {
+        setMyId(profile.id);
+      } else {
+        toast.error("Failed to verify user identity");
+        return;
       }
+
+      // 2. Get Clinics
+      const clinicsList = await safeApiCall(listClinicsApiClinicsGet());
+      if (clinicsList) {
+        setClinics(clinicsList);
+      }
+
+      // 3. Get Doctors (Try fetching users, assuming maybe we can filter or just get all?)
+      // Note: This endpoint might be restricted. If so, doctors list will be empty.
+      const usersList = await safeApiCall(listUsersApiUsersGet(), {
+        errorMessage: "Could not fetch doctors list", // Supress or custom
+      });
+      if (usersList) {
+        const docList = usersList.filter(u => u.role === "doctor");
+        setDoctors(docList);
+      }
+      setIsLoadingData(false);
     };
     fetchData();
   }, []);
@@ -69,33 +59,24 @@ export default function NewPatientVisitPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleSubmit = async (data: any) => {
     setIsSubmitting(true);
-    try {
-      const response = await createVisitApiVisitsPost({
+    const result = await safeApiCall(
+      createVisitApiVisitsPost({
         body: {
-          ...data,
-          patient_id: myId, // Injected
+          patient_user_id: myId, // Using user_id now
+          doctor_user_id: data.doctor_id, // Using user_id now
+          clinic_id: data.clinic_id,
+          visit_type: data.visit_type,
+          chief_complaint: data.chief_complaint || null,
           visit_datetime: new Date(data.visit_datetime).toISOString(), // Ensure ISO format
         },
-      });
+      }),
+      { successMessage: "Appointment booked successfully!" }
+    );
 
-      if (response.data?.success) {
-        toast.success("Appointment booked successfully!");
-        router.push("/dashboard/patient/visits");
-      } else {
-        toast.error(response.data?.message || "Failed to book appointment");
-      }
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      if (error?.response?.data?.message) {
-        toast.error(error.response.data.message);
-      } else {
-        toast.error("An error occurred while booking");
-        console.error(error);
-      }
-    } finally {
-      setIsSubmitting(false);
+    if (result) {
+      router.push("/dashboard/patient/visits");
     }
+    setIsSubmitting(false);
   };
 
   if (isLoadingData) {

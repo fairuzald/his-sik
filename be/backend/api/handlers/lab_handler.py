@@ -80,32 +80,7 @@ class LabHandler(BaseHandler):
         return response_factory.success(data=LabOrderDTO.model_validate(result))
 
     async def update_lab_order(
-        self, order_id: UUID, req: LabOrderUpdateStatusDTO, profile: AuthenticatedProfile, file=None
+        self, order_id: UUID, req: LabOrderUpdateStatusDTO, profile: AuthenticatedProfile
     ):
-        """
-        Update lab order status and optionally upload an attachment in a single request.
-        If a file is provided, it will be uploaded and attached to the result.
-        """
-        attachment_url = None
-        attachment_type = None
-
-        # Handle file upload if provided
-        if file:
-            if file.content_type not in ["application/pdf", "image/png", "image/jpeg", "image/jpg"]:
-                return response_factory.error(code=400, message="Invalid file type. Only PDF and images are allowed.")
-
-            from backend.infrastructure.storage.s3_service import get_storage_service
-            s3 = get_storage_service()
-
-            path = f"lab_results/{order_id}/{file.filename}"
-            res = await s3.upload_file(file.file, path, file.content_type)
-            if not res.success:
-                return response_factory.error(code=500, message=f"Upload failed: {res.error}")
-
-            attachment_url = res.file_url
-            attachment_type = "pdf" if "pdf" in file.content_type else "image"
-
-        result = await self.usecase.update_lab_order(
-            order_id, req, profile.id, attachment_url, attachment_type
-        )
+        result = await self.usecase.update_lab_order(order_id, req, profile.id)
         return response_factory.success(data=LabOrderDTO.model_validate(result), message="Lab order updated")

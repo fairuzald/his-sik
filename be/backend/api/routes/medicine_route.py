@@ -91,7 +91,7 @@ async def get_medicine(
     return await handler.get_medicine(medicine_id)
 
 
-@router.put("/{medicine_id}", response_model=ApiResponse[MedicineDTO], dependencies=[Depends(require_pharmacy_access)])
+@router.patch("/{medicine_id}", response_model=ApiResponse[MedicineDTO], dependencies=[Depends(require_pharmacy_access)])
 async def update_medicine(
     medicine_id: UUID,
     req: MedicineUpdateDTO,

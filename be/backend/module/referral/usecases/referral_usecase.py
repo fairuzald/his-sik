@@ -92,12 +92,10 @@ class ReferralUseCase:
         self,
         referral_id: UUID,
         req: ReferralUpdateDTO,
-        doctor_id: UUID,
-        attachment_url: Optional[str] = None
+        doctor_id: UUID
     ) -> Referral:
         """
-        Update referral with optional attachment from file upload.
-        Combines the functionality of updating referral data and uploading attachments.
+        Update referral.
         """
         referral = await self.repository.get_by_id(referral_id)
         if not referral:
@@ -110,10 +108,6 @@ class ReferralUseCase:
         # Apply updates from request
         for key, value in req.model_dump(exclude_unset=True).items():
             setattr(referral, key, value)
-
-        # Override attachment_url if file was uploaded
-        if attachment_url:
-            referral.attachment_url = attachment_url
 
         return await self.repository.update(referral)
 

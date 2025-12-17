@@ -1,20 +1,19 @@
 import { client } from "@/sdk/output/client.gen";
+import { StaffDepartmentEnum } from "@/sdk/output/types.gen";
 import Cookies from "js-cookie";
 
 export const AUTH_TOKEN_KEY = "access_token";
 export const REFRESH_TOKEN_KEY = "refresh_token";
 
-export type UserRole =
-  | "admin"
-  | "doctor"
-  | "nurse"
-  | "registration"
-  | "staff"
-  | "patient"
-  | "pharmacy"
-  | "pharmacist"
-  | "lab"
-  | "cashier";
+// Actual roles from backend: admin, doctor, staff, patient
+export type UserRole = "admin" | "doctor" | "staff" | "patient";
+
+// Staff departments (for staff role only)
+export type StaffDepartment =
+  | "Registration"
+  | "Pharmacy"
+  | "Laboratory"
+  | "Cashier";
 
 export const setAuthTokens = (accessToken: string, refreshToken: string) => {
   Cookies.set(AUTH_TOKEN_KEY, accessToken, {
@@ -54,32 +53,37 @@ export const removeAuthTokens = () => {
   });
 };
 
+/**
+ * Get dashboard path based on role.
+ * For direct roles (admin, doctor, patient): returns their dashboard.
+ * For staff: should use getDashboardPathForStaff with department instead.
+ */
 export const getDashboardPathForRole = (role: string): string => {
-  const normalizeRole = role.toLowerCase();
+  const normalizedRole = role.toLowerCase();
 
   const roleMap: Record<string, string> = {
     admin: "/dashboard/admin",
     doctor: "/dashboard/doctor",
-    header_nurse: "/dashboard/registration",
-    nurse: "/dashboard/registration",
-    registration: "/dashboard/registration",
-    staff: "/dashboard/registration",
     patient: "/dashboard/patient",
-    pharmacy: "/dashboard/pharmacy",
-    pharmacist: "/dashboard/pharmacy",
-    lab: "/dashboard/lab",
-    cashier: "/dashboard/cashier",
+    // Staff defaults to registration, but should use department-specific function
+    staff: "/dashboard",
   };
 
-  if (roleMap[normalizeRole]) {
-    return roleMap[normalizeRole];
-  }
+  return roleMap[normalizedRole] || "/dashboard";
+};
 
-  // Partial match fallback
-  if (normalizeRole.includes("registration")) return "/dashboard/registration";
-  if (normalizeRole.includes("pharmacy")) return "/dashboard/pharmacy";
-  if (normalizeRole.includes("lab")) return "/dashboard/lab";
-  if (normalizeRole.includes("cashier")) return "/dashboard/cashier";
+/**
+ * Get dashboard path based on staff department.
+ */
+export const getDashboardPathForStaffDepartment = (
+  department: StaffDepartmentEnum
+): string => {
+  const departmentMap: Record<StaffDepartmentEnum, string> = {
+    [StaffDepartmentEnum.REGISTRATION]: "/dashboard/registration",
+    [StaffDepartmentEnum.PHARMACY]: "/dashboard/pharmacy",
+    [StaffDepartmentEnum.LABORATORY]: "/dashboard/lab",
+    [StaffDepartmentEnum.CASHIER]: "/dashboard/cashier",
+  };
 
-  return "/dashboard";
+  return departmentMap[department] || "/dashboard";
 };

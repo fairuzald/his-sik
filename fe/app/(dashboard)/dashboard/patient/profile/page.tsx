@@ -11,12 +11,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { safeApiCall } from "@/lib/api-handler";
 import { getMyProfileApiProfileMeGet } from "@/sdk/output/sdk.gen";
 import { PatientProfileDao, UserProfileDao } from "@/sdk/output/types.gen";
 import { Edit, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
 
 export default function PatientProfilePage() {
   const [profile, setProfile] = useState<UserProfileDao | null>(null);
@@ -24,20 +24,11 @@ export default function PatientProfilePage() {
 
   useEffect(() => {
     const fetchProfile = async () => {
-      try {
-        const response = await getMyProfileApiProfileMeGet();
-        if (response.data?.success && response.data.data) {
-          setProfile(response.data.data);
-        } else {
-          // If failed, maybe redirect to login? handled by auth guard usually
-          toast.error("Failed to load profile");
-        }
-      } catch (error) {
-        console.error(error);
-        toast.error("Error loading profile");
-      } finally {
-        setIsLoading(false);
+      const result = await safeApiCall(getMyProfileApiProfileMeGet());
+      if (result) {
+        setProfile(result);
       }
+      setIsLoading(false);
     };
     fetchProfile();
   }, []);

@@ -102,13 +102,13 @@ export enum BloodTypeEnum {
   AB = "AB",
   O = "O",
   "A+" = "A+",
-  A_MINUS = "A-",
+  "A-" = "A-",
   "B+" = "B+",
-  B_MINUS = "B-",
+  "B-" = "B-",
   "AB+" = "AB+",
-  AB_MINUS = "AB-",
+  "AB-" = "AB-",
   "O+" = "O+",
-  O_MINUS = "O-",
+  "O-" = "O-",
 }
 
 export type BodyLogoutApiAuthLogoutPost = {
@@ -117,24 +117,6 @@ export type BodyLogoutApiAuthLogoutPost = {
 
 export type BodyRefreshTokenApiAuthRefreshPost = {
   refresh_token: string;
-};
-
-export type BodyUpdateLabOrderApiLabOrdersOrderIdPatch = {
-  order_status: string;
-  result_value?: string | null;
-  result_unit?: string | null;
-  interpretation?: string | null;
-  file?: (Blob | File) | null;
-};
-
-export type BodyUpdateReferralApiReferralsReferralIdPut = {
-  referred_to_facility?: string | null;
-  specialty?: string | null;
-  reason?: string | null;
-  diagnosis?: string | null;
-  notes?: string | null;
-  referral_status?: string | null;
-  file?: (Blob | File) | null;
 };
 
 export type ClinicCreateDto = {
@@ -149,7 +131,88 @@ export type ClinicDto = {
 };
 
 export type ClinicUpdateDto = {
-  name: string;
+  name?: string | null;
+};
+
+/**
+ * DTO for creating a doctor user with doctor profile fields
+ */
+export type CreateDoctorDto = {
+  username: string;
+  password: string;
+  full_name: string;
+  email?: string | null;
+  phone_number?: string | null;
+  /**
+   * Medical specialty
+   */
+  specialty?: string | null;
+  /**
+   * Surat Izin Praktek number
+   */
+  sip_number?: string | null;
+  /**
+   * Surat Tanda Registrasi (16 digits)
+   */
+  str_number?: string | null;
+};
+
+/**
+ * DTO for creating a patient user with patient profile fields
+ */
+export type CreatePatientDto = {
+  username: string;
+  password: string;
+  full_name: string;
+  email?: string | null;
+  phone_number?: string | null;
+  /**
+   * NIK Indonesia (16 digits)
+   */
+  nik: string;
+  /**
+   * Date of birth
+   */
+  date_of_birth: string;
+  /**
+   * Gender (L/P)
+   */
+  gender: GenderEnum;
+  /**
+   * BPJS number (optional)
+   */
+  bpjs_number?: string | null;
+  /**
+   * Blood type
+   */
+  blood_type?: BloodTypeEnum | null;
+  /**
+   * Full address
+   */
+  address?: string | null;
+  /**
+   * Emergency contact name
+   */
+  emergency_contact_name?: string | null;
+  /**
+   * Emergency contact phone
+   */
+  emergency_contact_phone?: string | null;
+};
+
+/**
+ * DTO for creating a staff user with staff profile fields
+ */
+export type CreateStaffDto = {
+  username: string;
+  password: string;
+  full_name: string;
+  email?: string | null;
+  phone_number?: string | null;
+  /**
+   * Staff department: Registration/Pharmacy/Laboratory/Cashier
+   */
+  department: StaffDepartmentEnum;
 };
 
 export type CreateUserDto = {
@@ -260,6 +323,17 @@ export type LabOrderDto = {
   lab_test?: LabTestDto | null;
   visit?: VisitDto | null;
   result?: LabResultDto | null;
+};
+
+export type LabOrderUpdateStatusDto = {
+  order_status: string;
+  result?: LabResultBase | null;
+};
+
+export type LabResultBase = {
+  result_value?: string | null;
+  result_unit?: string | null;
+  interpretation?: string | null;
 };
 
 export type LabResultDto = {
@@ -611,12 +685,56 @@ export type ReferralDto = {
   visit?: VisitDto | null;
 };
 
+export type ReferralUpdateDto = {
+  referred_to_facility?: string | null;
+  specialty?: string | null;
+  reason?: string | null;
+  diagnosis?: string | null;
+  notes?: string | null;
+  referral_status?: string | null;
+};
+
+/**
+ * Patient self-registration DTO with patient profile fields
+ */
 export type RegisterDto = {
   username: string;
   password: string;
   full_name: string;
   email?: string | null;
   phone_number?: string | null;
+  /**
+   * NIK Indonesia (16 digits)
+   */
+  nik: string;
+  /**
+   * Date of birth
+   */
+  date_of_birth: string;
+  /**
+   * Gender (L/P)
+   */
+  gender: GenderEnum;
+  /**
+   * BPJS number (optional)
+   */
+  bpjs_number?: string | null;
+  /**
+   * Blood type
+   */
+  blood_type?: BloodTypeEnum | null;
+  /**
+   * Full address
+   */
+  address?: string | null;
+  /**
+   * Emergency contact name
+   */
+  emergency_contact_name?: string | null;
+  /**
+   * Emergency contact phone
+   */
+  emergency_contact_phone?: string | null;
 };
 
 export enum StaffDepartmentEnum {
@@ -672,6 +790,13 @@ export type UpdateStaffProfileDto = {
   department?: StaffDepartmentEnum | null;
 };
 
+export type UpdateUserAdminDto = {
+  full_name?: string | null;
+  email?: string | null;
+  phone_number?: string | null;
+  is_active?: boolean | null;
+};
+
 export type UserDao = {
   id: string;
   username: string;
@@ -699,8 +824,8 @@ export type VisitCreateDto = {
   visit_type?: VisitTypeEnum;
   chief_complaint?: string | null;
   visit_datetime?: string;
-  patient_id: string;
-  doctor_id: string;
+  patient_user_id: string;
+  doctor_user_id: string;
   clinic_id: string;
 };
 
@@ -956,6 +1081,116 @@ export type CreateUserApiUsersPostResponses = {
 export type CreateUserApiUsersPostResponse =
   CreateUserApiUsersPostResponses[keyof CreateUserApiUsersPostResponses];
 
+export type UpdateUserApiUsersUserIdPatchData = {
+  body: UpdateUserAdminDto;
+  path: {
+    user_id: string;
+  };
+  query?: never;
+  url: "/api/users/{user_id}";
+};
+
+export type UpdateUserApiUsersUserIdPatchErrors = {
+  /**
+   * Validation Error
+   */
+  422: ErrorResponse;
+};
+
+export type UpdateUserApiUsersUserIdPatchError =
+  UpdateUserApiUsersUserIdPatchErrors[keyof UpdateUserApiUsersUserIdPatchErrors];
+
+export type UpdateUserApiUsersUserIdPatchResponses = {
+  /**
+   * Successful Response
+   */
+  200: ApiResponseUserDao;
+};
+
+export type UpdateUserApiUsersUserIdPatchResponse =
+  UpdateUserApiUsersUserIdPatchResponses[keyof UpdateUserApiUsersUserIdPatchResponses];
+
+export type CreatePatientUserApiUsersPatientsPostData = {
+  body: CreatePatientDto;
+  path?: never;
+  query?: never;
+  url: "/api/users/patients";
+};
+
+export type CreatePatientUserApiUsersPatientsPostErrors = {
+  /**
+   * Validation Error
+   */
+  422: ErrorResponse;
+};
+
+export type CreatePatientUserApiUsersPatientsPostError =
+  CreatePatientUserApiUsersPatientsPostErrors[keyof CreatePatientUserApiUsersPatientsPostErrors];
+
+export type CreatePatientUserApiUsersPatientsPostResponses = {
+  /**
+   * Successful Response
+   */
+  200: ApiResponseUserDao;
+};
+
+export type CreatePatientUserApiUsersPatientsPostResponse =
+  CreatePatientUserApiUsersPatientsPostResponses[keyof CreatePatientUserApiUsersPatientsPostResponses];
+
+export type CreateDoctorUserApiUsersDoctorsPostData = {
+  body: CreateDoctorDto;
+  path?: never;
+  query?: never;
+  url: "/api/users/doctors";
+};
+
+export type CreateDoctorUserApiUsersDoctorsPostErrors = {
+  /**
+   * Validation Error
+   */
+  422: ErrorResponse;
+};
+
+export type CreateDoctorUserApiUsersDoctorsPostError =
+  CreateDoctorUserApiUsersDoctorsPostErrors[keyof CreateDoctorUserApiUsersDoctorsPostErrors];
+
+export type CreateDoctorUserApiUsersDoctorsPostResponses = {
+  /**
+   * Successful Response
+   */
+  200: ApiResponseUserDao;
+};
+
+export type CreateDoctorUserApiUsersDoctorsPostResponse =
+  CreateDoctorUserApiUsersDoctorsPostResponses[keyof CreateDoctorUserApiUsersDoctorsPostResponses];
+
+export type CreateStaffUserApiUsersStaffPostData = {
+  body: CreateStaffDto;
+  path?: never;
+  query?: never;
+  url: "/api/users/staff";
+};
+
+export type CreateStaffUserApiUsersStaffPostErrors = {
+  /**
+   * Validation Error
+   */
+  422: ErrorResponse;
+};
+
+export type CreateStaffUserApiUsersStaffPostError =
+  CreateStaffUserApiUsersStaffPostErrors[keyof CreateStaffUserApiUsersStaffPostErrors];
+
+export type CreateStaffUserApiUsersStaffPostResponses = {
+  /**
+   * Successful Response
+   */
+  200: ApiResponseUserDao;
+};
+
+export type CreateStaffUserApiUsersStaffPostResponse =
+  CreateStaffUserApiUsersStaffPostResponses[keyof CreateStaffUserApiUsersStaffPostResponses];
+
 export type ListClinicsApiClinicsGetData = {
   body?: never;
   path?: never;
@@ -1072,7 +1307,7 @@ export type GetClinicApiClinicsClinicIdGetResponses = {
 export type GetClinicApiClinicsClinicIdGetResponse =
   GetClinicApiClinicsClinicIdGetResponses[keyof GetClinicApiClinicsClinicIdGetResponses];
 
-export type UpdateClinicApiClinicsClinicIdPutData = {
+export type UpdateClinicApiClinicsClinicIdPatchData = {
   body: ClinicUpdateDto;
   path: {
     clinic_id: string;
@@ -1081,25 +1316,25 @@ export type UpdateClinicApiClinicsClinicIdPutData = {
   url: "/api/clinics/{clinic_id}";
 };
 
-export type UpdateClinicApiClinicsClinicIdPutErrors = {
+export type UpdateClinicApiClinicsClinicIdPatchErrors = {
   /**
    * Validation Error
    */
   422: ErrorResponse;
 };
 
-export type UpdateClinicApiClinicsClinicIdPutError =
-  UpdateClinicApiClinicsClinicIdPutErrors[keyof UpdateClinicApiClinicsClinicIdPutErrors];
+export type UpdateClinicApiClinicsClinicIdPatchError =
+  UpdateClinicApiClinicsClinicIdPatchErrors[keyof UpdateClinicApiClinicsClinicIdPatchErrors];
 
-export type UpdateClinicApiClinicsClinicIdPutResponses = {
+export type UpdateClinicApiClinicsClinicIdPatchResponses = {
   /**
    * Successful Response
    */
   200: ApiResponseClinicDto;
 };
 
-export type UpdateClinicApiClinicsClinicIdPutResponse =
-  UpdateClinicApiClinicsClinicIdPutResponses[keyof UpdateClinicApiClinicsClinicIdPutResponses];
+export type UpdateClinicApiClinicsClinicIdPatchResponse =
+  UpdateClinicApiClinicsClinicIdPatchResponses[keyof UpdateClinicApiClinicsClinicIdPatchResponses];
 
 export type GetMyProfileApiProfileMeGetData = {
   body?: never;
@@ -1128,113 +1363,113 @@ export type GetMyProfileApiProfileMeGetResponses = {
 export type GetMyProfileApiProfileMeGetResponse =
   GetMyProfileApiProfileMeGetResponses[keyof GetMyProfileApiProfileMeGetResponses];
 
-export type UpdateAdminProfileApiProfileAdminPutData = {
+export type UpdateAdminProfileApiProfileAdminPatchData = {
   body: UpdateAdminProfileDto;
   path?: never;
   query?: never;
   url: "/api/profile/admin";
 };
 
-export type UpdateAdminProfileApiProfileAdminPutErrors = {
+export type UpdateAdminProfileApiProfileAdminPatchErrors = {
   /**
    * Validation Error
    */
   422: ErrorResponse;
 };
 
-export type UpdateAdminProfileApiProfileAdminPutError =
-  UpdateAdminProfileApiProfileAdminPutErrors[keyof UpdateAdminProfileApiProfileAdminPutErrors];
+export type UpdateAdminProfileApiProfileAdminPatchError =
+  UpdateAdminProfileApiProfileAdminPatchErrors[keyof UpdateAdminProfileApiProfileAdminPatchErrors];
 
-export type UpdateAdminProfileApiProfileAdminPutResponses = {
+export type UpdateAdminProfileApiProfileAdminPatchResponses = {
   /**
    * Successful Response
    */
   200: ApiResponse;
 };
 
-export type UpdateAdminProfileApiProfileAdminPutResponse =
-  UpdateAdminProfileApiProfileAdminPutResponses[keyof UpdateAdminProfileApiProfileAdminPutResponses];
+export type UpdateAdminProfileApiProfileAdminPatchResponse =
+  UpdateAdminProfileApiProfileAdminPatchResponses[keyof UpdateAdminProfileApiProfileAdminPatchResponses];
 
-export type UpdateStaffProfileApiProfileStaffPutData = {
+export type UpdateStaffProfileApiProfileStaffPatchData = {
   body: UpdateStaffProfileDto;
   path?: never;
   query?: never;
   url: "/api/profile/staff";
 };
 
-export type UpdateStaffProfileApiProfileStaffPutErrors = {
+export type UpdateStaffProfileApiProfileStaffPatchErrors = {
   /**
    * Validation Error
    */
   422: ErrorResponse;
 };
 
-export type UpdateStaffProfileApiProfileStaffPutError =
-  UpdateStaffProfileApiProfileStaffPutErrors[keyof UpdateStaffProfileApiProfileStaffPutErrors];
+export type UpdateStaffProfileApiProfileStaffPatchError =
+  UpdateStaffProfileApiProfileStaffPatchErrors[keyof UpdateStaffProfileApiProfileStaffPatchErrors];
 
-export type UpdateStaffProfileApiProfileStaffPutResponses = {
+export type UpdateStaffProfileApiProfileStaffPatchResponses = {
   /**
    * Successful Response
    */
   200: ApiResponseUserProfileDao;
 };
 
-export type UpdateStaffProfileApiProfileStaffPutResponse =
-  UpdateStaffProfileApiProfileStaffPutResponses[keyof UpdateStaffProfileApiProfileStaffPutResponses];
+export type UpdateStaffProfileApiProfileStaffPatchResponse =
+  UpdateStaffProfileApiProfileStaffPatchResponses[keyof UpdateStaffProfileApiProfileStaffPatchResponses];
 
-export type UpdateDoctorProfileApiProfileDoctorPutData = {
+export type UpdateDoctorProfileApiProfileDoctorPatchData = {
   body: UpdateDoctorProfileDto;
   path?: never;
   query?: never;
   url: "/api/profile/doctor";
 };
 
-export type UpdateDoctorProfileApiProfileDoctorPutErrors = {
+export type UpdateDoctorProfileApiProfileDoctorPatchErrors = {
   /**
    * Validation Error
    */
   422: ErrorResponse;
 };
 
-export type UpdateDoctorProfileApiProfileDoctorPutError =
-  UpdateDoctorProfileApiProfileDoctorPutErrors[keyof UpdateDoctorProfileApiProfileDoctorPutErrors];
+export type UpdateDoctorProfileApiProfileDoctorPatchError =
+  UpdateDoctorProfileApiProfileDoctorPatchErrors[keyof UpdateDoctorProfileApiProfileDoctorPatchErrors];
 
-export type UpdateDoctorProfileApiProfileDoctorPutResponses = {
+export type UpdateDoctorProfileApiProfileDoctorPatchResponses = {
   /**
    * Successful Response
    */
   200: ApiResponseUserProfileDao;
 };
 
-export type UpdateDoctorProfileApiProfileDoctorPutResponse =
-  UpdateDoctorProfileApiProfileDoctorPutResponses[keyof UpdateDoctorProfileApiProfileDoctorPutResponses];
+export type UpdateDoctorProfileApiProfileDoctorPatchResponse =
+  UpdateDoctorProfileApiProfileDoctorPatchResponses[keyof UpdateDoctorProfileApiProfileDoctorPatchResponses];
 
-export type UpdatePatientProfileApiProfilePatientPutData = {
+export type UpdatePatientProfileApiProfilePatientPatchData = {
   body: UpdatePatientProfileDto;
   path?: never;
   query?: never;
   url: "/api/profile/patient";
 };
 
-export type UpdatePatientProfileApiProfilePatientPutErrors = {
+export type UpdatePatientProfileApiProfilePatientPatchErrors = {
   /**
    * Validation Error
    */
   422: ErrorResponse;
 };
 
-export type UpdatePatientProfileApiProfilePatientPutError =
-  UpdatePatientProfileApiProfilePatientPutErrors[keyof UpdatePatientProfileApiProfilePatientPutErrors];
+export type UpdatePatientProfileApiProfilePatientPatchError =
+  UpdatePatientProfileApiProfilePatientPatchErrors[keyof UpdatePatientProfileApiProfilePatientPatchErrors];
 
-export type UpdatePatientProfileApiProfilePatientPutResponses = {
+export type UpdatePatientProfileApiProfilePatientPatchResponses = {
   /**
    * Successful Response
    */
   200: ApiResponseUserProfileDao;
 };
 
-export type UpdatePatientProfileApiProfilePatientPutResponse =
-  UpdatePatientProfileApiProfilePatientPutResponses[keyof UpdatePatientProfileApiProfilePatientPutResponses];
+export type UpdatePatientProfileApiProfilePatientPatchResponse =
+  UpdatePatientProfileApiProfilePatientPatchResponses[keyof UpdatePatientProfileApiProfilePatientPatchResponses];
 
 export type ListVisitsApiVisitsGetData = {
   body?: never;
@@ -1354,7 +1589,7 @@ export type GetVisitApiVisitsVisitIdGetResponses = {
 export type GetVisitApiVisitsVisitIdGetResponse =
   GetVisitApiVisitsVisitIdGetResponses[keyof GetVisitApiVisitsVisitIdGetResponses];
 
-export type UpdateVisitApiVisitsVisitIdPutData = {
+export type UpdateVisitApiVisitsVisitIdPatchData = {
   body: VisitUpdateDto;
   path: {
     visit_id: string;
@@ -1363,25 +1598,25 @@ export type UpdateVisitApiVisitsVisitIdPutData = {
   url: "/api/visits/{visit_id}";
 };
 
-export type UpdateVisitApiVisitsVisitIdPutErrors = {
+export type UpdateVisitApiVisitsVisitIdPatchErrors = {
   /**
    * Validation Error
    */
   422: ErrorResponse;
 };
 
-export type UpdateVisitApiVisitsVisitIdPutError =
-  UpdateVisitApiVisitsVisitIdPutErrors[keyof UpdateVisitApiVisitsVisitIdPutErrors];
+export type UpdateVisitApiVisitsVisitIdPatchError =
+  UpdateVisitApiVisitsVisitIdPatchErrors[keyof UpdateVisitApiVisitsVisitIdPatchErrors];
 
-export type UpdateVisitApiVisitsVisitIdPutResponses = {
+export type UpdateVisitApiVisitsVisitIdPatchResponses = {
   /**
    * Successful Response
    */
   200: ApiResponseVisitDto;
 };
 
-export type UpdateVisitApiVisitsVisitIdPutResponse =
-  UpdateVisitApiVisitsVisitIdPutResponses[keyof UpdateVisitApiVisitsVisitIdPutResponses];
+export type UpdateVisitApiVisitsVisitIdPatchResponse =
+  UpdateVisitApiVisitsVisitIdPatchResponses[keyof UpdateVisitApiVisitsVisitIdPatchResponses];
 
 export type ListMedicalRecordsApiMedicalRecordsGetData = {
   body?: never;
@@ -1501,7 +1736,7 @@ export type GetMedicalRecordApiMedicalRecordsRecordIdGetResponses = {
 export type GetMedicalRecordApiMedicalRecordsRecordIdGetResponse =
   GetMedicalRecordApiMedicalRecordsRecordIdGetResponses[keyof GetMedicalRecordApiMedicalRecordsRecordIdGetResponses];
 
-export type UpdateMedicalRecordApiMedicalRecordsRecordIdPutData = {
+export type UpdateMedicalRecordApiMedicalRecordsRecordIdPatchData = {
   body: MedicalRecordUpdateDto;
   path: {
     record_id: string;
@@ -1510,25 +1745,25 @@ export type UpdateMedicalRecordApiMedicalRecordsRecordIdPutData = {
   url: "/api/medical-records/{record_id}";
 };
 
-export type UpdateMedicalRecordApiMedicalRecordsRecordIdPutErrors = {
+export type UpdateMedicalRecordApiMedicalRecordsRecordIdPatchErrors = {
   /**
    * Validation Error
    */
   422: ErrorResponse;
 };
 
-export type UpdateMedicalRecordApiMedicalRecordsRecordIdPutError =
-  UpdateMedicalRecordApiMedicalRecordsRecordIdPutErrors[keyof UpdateMedicalRecordApiMedicalRecordsRecordIdPutErrors];
+export type UpdateMedicalRecordApiMedicalRecordsRecordIdPatchError =
+  UpdateMedicalRecordApiMedicalRecordsRecordIdPatchErrors[keyof UpdateMedicalRecordApiMedicalRecordsRecordIdPatchErrors];
 
-export type UpdateMedicalRecordApiMedicalRecordsRecordIdPutResponses = {
+export type UpdateMedicalRecordApiMedicalRecordsRecordIdPatchResponses = {
   /**
    * Successful Response
    */
   200: ApiResponseMedicalRecordDto;
 };
 
-export type UpdateMedicalRecordApiMedicalRecordsRecordIdPutResponse =
-  UpdateMedicalRecordApiMedicalRecordsRecordIdPutResponses[keyof UpdateMedicalRecordApiMedicalRecordsRecordIdPutResponses];
+export type UpdateMedicalRecordApiMedicalRecordsRecordIdPatchResponse =
+  UpdateMedicalRecordApiMedicalRecordsRecordIdPatchResponses[keyof UpdateMedicalRecordApiMedicalRecordsRecordIdPatchResponses];
 
 export type ListMedicinesApiMedicinesGetData = {
   body?: never;
@@ -1646,7 +1881,7 @@ export type GetMedicineApiMedicinesMedicineIdGetResponses = {
 export type GetMedicineApiMedicinesMedicineIdGetResponse =
   GetMedicineApiMedicinesMedicineIdGetResponses[keyof GetMedicineApiMedicinesMedicineIdGetResponses];
 
-export type UpdateMedicineApiMedicinesMedicineIdPutData = {
+export type UpdateMedicineApiMedicinesMedicineIdPatchData = {
   body: MedicineUpdateDto;
   path: {
     medicine_id: string;
@@ -1655,25 +1890,25 @@ export type UpdateMedicineApiMedicinesMedicineIdPutData = {
   url: "/api/medicines/{medicine_id}";
 };
 
-export type UpdateMedicineApiMedicinesMedicineIdPutErrors = {
+export type UpdateMedicineApiMedicinesMedicineIdPatchErrors = {
   /**
    * Validation Error
    */
   422: ErrorResponse;
 };
 
-export type UpdateMedicineApiMedicinesMedicineIdPutError =
-  UpdateMedicineApiMedicinesMedicineIdPutErrors[keyof UpdateMedicineApiMedicinesMedicineIdPutErrors];
+export type UpdateMedicineApiMedicinesMedicineIdPatchError =
+  UpdateMedicineApiMedicinesMedicineIdPatchErrors[keyof UpdateMedicineApiMedicinesMedicineIdPatchErrors];
 
-export type UpdateMedicineApiMedicinesMedicineIdPutResponses = {
+export type UpdateMedicineApiMedicinesMedicineIdPatchResponses = {
   /**
    * Successful Response
    */
   200: ApiResponseMedicineDto;
 };
 
-export type UpdateMedicineApiMedicinesMedicineIdPutResponse =
-  UpdateMedicineApiMedicinesMedicineIdPutResponses[keyof UpdateMedicineApiMedicinesMedicineIdPutResponses];
+export type UpdateMedicineApiMedicinesMedicineIdPatchResponse =
+  UpdateMedicineApiMedicinesMedicineIdPatchResponses[keyof UpdateMedicineApiMedicinesMedicineIdPatchResponses];
 
 export type ListPrescriptionsApiPrescriptionsGetData = {
   body?: never;
@@ -1763,7 +1998,7 @@ export type GetPrescriptionApiPrescriptionsPrescriptionIdGetResponses = {
 export type GetPrescriptionApiPrescriptionsPrescriptionIdGetResponse =
   GetPrescriptionApiPrescriptionsPrescriptionIdGetResponses[keyof GetPrescriptionApiPrescriptionsPrescriptionIdGetResponses];
 
-export type UpdatePrescriptionApiPrescriptionsPrescriptionIdPutData = {
+export type UpdatePrescriptionApiPrescriptionsPrescriptionIdPatchData = {
   body: PrescriptionUpdateDto;
   path: {
     prescription_id: string;
@@ -1772,25 +2007,25 @@ export type UpdatePrescriptionApiPrescriptionsPrescriptionIdPutData = {
   url: "/api/prescriptions/{prescription_id}";
 };
 
-export type UpdatePrescriptionApiPrescriptionsPrescriptionIdPutErrors = {
+export type UpdatePrescriptionApiPrescriptionsPrescriptionIdPatchErrors = {
   /**
    * Validation Error
    */
   422: ErrorResponse;
 };
 
-export type UpdatePrescriptionApiPrescriptionsPrescriptionIdPutError =
-  UpdatePrescriptionApiPrescriptionsPrescriptionIdPutErrors[keyof UpdatePrescriptionApiPrescriptionsPrescriptionIdPutErrors];
+export type UpdatePrescriptionApiPrescriptionsPrescriptionIdPatchError =
+  UpdatePrescriptionApiPrescriptionsPrescriptionIdPatchErrors[keyof UpdatePrescriptionApiPrescriptionsPrescriptionIdPatchErrors];
 
-export type UpdatePrescriptionApiPrescriptionsPrescriptionIdPutResponses = {
+export type UpdatePrescriptionApiPrescriptionsPrescriptionIdPatchResponses = {
   /**
    * Successful Response
    */
   200: ApiResponsePrescriptionDto;
 };
 
-export type UpdatePrescriptionApiPrescriptionsPrescriptionIdPutResponse =
-  UpdatePrescriptionApiPrescriptionsPrescriptionIdPutResponses[keyof UpdatePrescriptionApiPrescriptionsPrescriptionIdPutResponses];
+export type UpdatePrescriptionApiPrescriptionsPrescriptionIdPatchResponse =
+  UpdatePrescriptionApiPrescriptionsPrescriptionIdPatchResponses[keyof UpdatePrescriptionApiPrescriptionsPrescriptionIdPatchResponses];
 
 export type UpdatePrescriptionStatusApiPrescriptionsPrescriptionIdStatusPatchData =
   {
@@ -1941,7 +2176,7 @@ export type GetLabTestApiLabTestsTestIdGetResponses = {
 export type GetLabTestApiLabTestsTestIdGetResponse =
   GetLabTestApiLabTestsTestIdGetResponses[keyof GetLabTestApiLabTestsTestIdGetResponses];
 
-export type UpdateLabTestApiLabTestsTestIdPutData = {
+export type UpdateLabTestApiLabTestsTestIdPatchData = {
   body: LabTestUpdateDto;
   path: {
     test_id: string;
@@ -1950,25 +2185,25 @@ export type UpdateLabTestApiLabTestsTestIdPutData = {
   url: "/api/lab/tests/{test_id}";
 };
 
-export type UpdateLabTestApiLabTestsTestIdPutErrors = {
+export type UpdateLabTestApiLabTestsTestIdPatchErrors = {
   /**
    * Validation Error
    */
   422: ErrorResponse;
 };
 
-export type UpdateLabTestApiLabTestsTestIdPutError =
-  UpdateLabTestApiLabTestsTestIdPutErrors[keyof UpdateLabTestApiLabTestsTestIdPutErrors];
+export type UpdateLabTestApiLabTestsTestIdPatchError =
+  UpdateLabTestApiLabTestsTestIdPatchErrors[keyof UpdateLabTestApiLabTestsTestIdPatchErrors];
 
-export type UpdateLabTestApiLabTestsTestIdPutResponses = {
+export type UpdateLabTestApiLabTestsTestIdPatchResponses = {
   /**
    * Successful Response
    */
   200: ApiResponseLabTestDto;
 };
 
-export type UpdateLabTestApiLabTestsTestIdPutResponse =
-  UpdateLabTestApiLabTestsTestIdPutResponses[keyof UpdateLabTestApiLabTestsTestIdPutResponses];
+export type UpdateLabTestApiLabTestsTestIdPatchResponse =
+  UpdateLabTestApiLabTestsTestIdPatchResponses[keyof UpdateLabTestApiLabTestsTestIdPatchResponses];
 
 export type ListLabOrdersApiLabOrdersGetData = {
   body?: never;
@@ -2058,7 +2293,7 @@ export type GetLabOrderApiLabOrdersOrderIdGetResponse =
   GetLabOrderApiLabOrdersOrderIdGetResponses[keyof GetLabOrderApiLabOrdersOrderIdGetResponses];
 
 export type UpdateLabOrderApiLabOrdersOrderIdPatchData = {
-  body: BodyUpdateLabOrderApiLabOrdersOrderIdPatch;
+  body: LabOrderUpdateStatusDto;
   path: {
     order_id: string;
   };
@@ -2202,8 +2437,8 @@ export type GetReferralApiReferralsReferralIdGetResponses = {
 export type GetReferralApiReferralsReferralIdGetResponse =
   GetReferralApiReferralsReferralIdGetResponses[keyof GetReferralApiReferralsReferralIdGetResponses];
 
-export type UpdateReferralApiReferralsReferralIdPutData = {
-  body?: BodyUpdateReferralApiReferralsReferralIdPut;
+export type UpdateReferralApiReferralsReferralIdPatchData = {
+  body: ReferralUpdateDto;
   path: {
     referral_id: string;
   };
@@ -2211,25 +2446,25 @@ export type UpdateReferralApiReferralsReferralIdPutData = {
   url: "/api/referrals/{referral_id}";
 };
 
-export type UpdateReferralApiReferralsReferralIdPutErrors = {
+export type UpdateReferralApiReferralsReferralIdPatchErrors = {
   /**
    * Validation Error
    */
   422: ErrorResponse;
 };
 
-export type UpdateReferralApiReferralsReferralIdPutError =
-  UpdateReferralApiReferralsReferralIdPutErrors[keyof UpdateReferralApiReferralsReferralIdPutErrors];
+export type UpdateReferralApiReferralsReferralIdPatchError =
+  UpdateReferralApiReferralsReferralIdPatchErrors[keyof UpdateReferralApiReferralsReferralIdPatchErrors];
 
-export type UpdateReferralApiReferralsReferralIdPutResponses = {
+export type UpdateReferralApiReferralsReferralIdPatchResponses = {
   /**
    * Successful Response
    */
   200: ApiResponseReferralDto;
 };
 
-export type UpdateReferralApiReferralsReferralIdPutResponse =
-  UpdateReferralApiReferralsReferralIdPutResponses[keyof UpdateReferralApiReferralsReferralIdPutResponses];
+export type UpdateReferralApiReferralsReferralIdPatchResponse =
+  UpdateReferralApiReferralsReferralIdPatchResponses[keyof UpdateReferralApiReferralsReferralIdPatchResponses];
 
 export type ListInvoicesApiInvoicesGetData = {
   body?: never;
@@ -2346,7 +2581,7 @@ export type GetInvoiceApiInvoicesInvoiceIdGetResponses = {
 export type GetInvoiceApiInvoicesInvoiceIdGetResponse =
   GetInvoiceApiInvoicesInvoiceIdGetResponses[keyof GetInvoiceApiInvoicesInvoiceIdGetResponses];
 
-export type UpdateInvoiceApiInvoicesInvoiceIdPutData = {
+export type UpdateInvoiceApiInvoicesInvoiceIdPatchData = {
   body: InvoiceUpdateDto;
   path: {
     invoice_id: string;
@@ -2355,25 +2590,25 @@ export type UpdateInvoiceApiInvoicesInvoiceIdPutData = {
   url: "/api/invoices/{invoice_id}";
 };
 
-export type UpdateInvoiceApiInvoicesInvoiceIdPutErrors = {
+export type UpdateInvoiceApiInvoicesInvoiceIdPatchErrors = {
   /**
    * Validation Error
    */
   422: ErrorResponse;
 };
 
-export type UpdateInvoiceApiInvoicesInvoiceIdPutError =
-  UpdateInvoiceApiInvoicesInvoiceIdPutErrors[keyof UpdateInvoiceApiInvoicesInvoiceIdPutErrors];
+export type UpdateInvoiceApiInvoicesInvoiceIdPatchError =
+  UpdateInvoiceApiInvoicesInvoiceIdPatchErrors[keyof UpdateInvoiceApiInvoicesInvoiceIdPatchErrors];
 
-export type UpdateInvoiceApiInvoicesInvoiceIdPutResponses = {
+export type UpdateInvoiceApiInvoicesInvoiceIdPatchResponses = {
   /**
    * Successful Response
    */
   200: ApiResponseInvoiceDto;
 };
 
-export type UpdateInvoiceApiInvoicesInvoiceIdPutResponse =
-  UpdateInvoiceApiInvoicesInvoiceIdPutResponses[keyof UpdateInvoiceApiInvoicesInvoiceIdPutResponses];
+export type UpdateInvoiceApiInvoicesInvoiceIdPatchResponse =
+  UpdateInvoiceApiInvoicesInvoiceIdPatchResponses[keyof UpdateInvoiceApiInvoicesInvoiceIdPatchResponses];
 
 export type ListDevicesApiWearablesDevicesGetData = {
   body?: never;
@@ -2490,7 +2725,7 @@ export type GetDeviceApiWearablesDevicesDeviceIdGetResponses = {
 export type GetDeviceApiWearablesDevicesDeviceIdGetResponse =
   GetDeviceApiWearablesDevicesDeviceIdGetResponses[keyof GetDeviceApiWearablesDevicesDeviceIdGetResponses];
 
-export type UpdateDeviceApiWearablesDevicesDeviceIdPutData = {
+export type UpdateDeviceApiWearablesDevicesDeviceIdPatchData = {
   body: WearableDeviceUpdateDto;
   path: {
     device_id: string;
@@ -2499,25 +2734,25 @@ export type UpdateDeviceApiWearablesDevicesDeviceIdPutData = {
   url: "/api/wearables/devices/{device_id}";
 };
 
-export type UpdateDeviceApiWearablesDevicesDeviceIdPutErrors = {
+export type UpdateDeviceApiWearablesDevicesDeviceIdPatchErrors = {
   /**
    * Validation Error
    */
   422: ErrorResponse;
 };
 
-export type UpdateDeviceApiWearablesDevicesDeviceIdPutError =
-  UpdateDeviceApiWearablesDevicesDeviceIdPutErrors[keyof UpdateDeviceApiWearablesDevicesDeviceIdPutErrors];
+export type UpdateDeviceApiWearablesDevicesDeviceIdPatchError =
+  UpdateDeviceApiWearablesDevicesDeviceIdPatchErrors[keyof UpdateDeviceApiWearablesDevicesDeviceIdPatchErrors];
 
-export type UpdateDeviceApiWearablesDevicesDeviceIdPutResponses = {
+export type UpdateDeviceApiWearablesDevicesDeviceIdPatchResponses = {
   /**
    * Successful Response
    */
   200: ApiResponseWearableDeviceDto;
 };
 
-export type UpdateDeviceApiWearablesDevicesDeviceIdPutResponse =
-  UpdateDeviceApiWearablesDevicesDeviceIdPutResponses[keyof UpdateDeviceApiWearablesDevicesDeviceIdPutResponses];
+export type UpdateDeviceApiWearablesDevicesDeviceIdPatchResponse =
+  UpdateDeviceApiWearablesDevicesDeviceIdPatchResponses[keyof UpdateDeviceApiWearablesDevicesDeviceIdPatchResponses];
 
 export type ListMeasurementsApiWearablesDevicesDeviceIdMeasurementsGetData = {
   body?: never;

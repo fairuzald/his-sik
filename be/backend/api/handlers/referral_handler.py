@@ -44,30 +44,9 @@ class ReferralHandler(BaseHandler):
         return response_factory.success(data=ReferralDTO.model_validate(result))
 
     async def update_referral(
-        self, referral_id: UUID, req: ReferralUpdateDTO, profile: AuthenticatedProfile, file=None
+        self, referral_id: UUID, req: ReferralUpdateDTO, profile: AuthenticatedProfile
     ):
-        """
-        Update referral and optionally upload an attachment in a single request.
-        If a file is provided, it will be uploaded and the attachment_url will be updated.
-        """
-        attachment_url = None
-
-        # Handle file upload if provided
-        if file:
-            if file.content_type not in ["application/pdf", "image/png", "image/jpeg", "image/jpg"]:
-                return response_factory.error(code=400, message="Invalid file type. Only PDF and images are allowed.")
-
-            from backend.infrastructure.storage.s3_service import get_storage_service
-            s3 = get_storage_service()
-
-            path = f"referrals/{referral_id}/{file.filename}"
-            res = await s3.upload_file(file.file, path, file.content_type)
-            if not res.success:
-                return response_factory.error(code=500, message=f"Upload failed: {res.error}")
-
-            attachment_url = res.file_url
-
-        result = await self.usecase.update_referral(referral_id, req, profile.id, attachment_url)
+        result = await self.usecase.update_referral(referral_id, req, profile.id)
         return response_factory.success(data=ReferralDTO.model_validate(result), message="Referral updated")
 
     async def delete_referral(self, referral_id: UUID, profile: AuthenticatedProfile):

@@ -551,148 +551,6 @@ export const Body_refresh_token_api_auth_refresh_postSchema = {
     title: 'Body_refresh_token_api_auth_refresh_post'
 } as const;
 
-export const Body_update_lab_order_api_lab_orders__order_id__patchSchema = {
-    properties: {
-        order_status: {
-            type: 'string',
-            title: 'Order Status'
-        },
-        result_value: {
-            anyOf: [
-                {
-                    type: 'string'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Result Value'
-        },
-        result_unit: {
-            anyOf: [
-                {
-                    type: 'string'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Result Unit'
-        },
-        interpretation: {
-            anyOf: [
-                {
-                    type: 'string'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Interpretation'
-        },
-        file: {
-            anyOf: [
-                {
-                    type: 'string',
-                    format: 'binary'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'File'
-        }
-    },
-    type: 'object',
-    required: ['order_status'],
-    title: 'Body_update_lab_order_api_lab_orders__order_id__patch'
-} as const;
-
-export const Body_update_referral_api_referrals__referral_id__putSchema = {
-    properties: {
-        referred_to_facility: {
-            anyOf: [
-                {
-                    type: 'string'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Referred To Facility'
-        },
-        specialty: {
-            anyOf: [
-                {
-                    type: 'string'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Specialty'
-        },
-        reason: {
-            anyOf: [
-                {
-                    type: 'string'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Reason'
-        },
-        diagnosis: {
-            anyOf: [
-                {
-                    type: 'string'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Diagnosis'
-        },
-        notes: {
-            anyOf: [
-                {
-                    type: 'string'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Notes'
-        },
-        referral_status: {
-            anyOf: [
-                {
-                    type: 'string'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Referral Status'
-        },
-        file: {
-            anyOf: [
-                {
-                    type: 'string',
-                    format: 'binary'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'File'
-        }
-    },
-    type: 'object',
-    title: 'Body_update_referral_api_referrals__referral_id__put'
-} as const;
-
 export const ClinicCreateDTOSchema = {
     properties: {
         name: {
@@ -735,13 +593,292 @@ export const ClinicDTOSchema = {
 export const ClinicUpdateDTOSchema = {
     properties: {
         name: {
-            type: 'string',
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
             title: 'Name'
         }
     },
     type: 'object',
-    required: ['name'],
     title: 'ClinicUpdateDTO'
+} as const;
+
+export const CreateDoctorDTOSchema = {
+    properties: {
+        username: {
+            type: 'string',
+            maxLength: 50,
+            minLength: 3,
+            title: 'Username'
+        },
+        password: {
+            type: 'string',
+            minLength: 6,
+            title: 'Password'
+        },
+        full_name: {
+            type: 'string',
+            maxLength: 150,
+            minLength: 1,
+            title: 'Full Name'
+        },
+        email: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'email'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Email'
+        },
+        phone_number: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Phone Number'
+        },
+        specialty: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 100
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Specialty',
+            description: 'Medical specialty'
+        },
+        sip_number: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 50
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Sip Number',
+            description: 'Surat Izin Praktek number'
+        },
+        str_number: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 50,
+                    pattern: '^[0-9]{16}$'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Str Number',
+            description: 'Surat Tanda Registrasi (16 digits)'
+        }
+    },
+    additionalProperties: false,
+    type: 'object',
+    required: ['username', 'password', 'full_name'],
+    title: 'CreateDoctorDTO',
+    description: 'DTO for creating a doctor user with doctor profile fields'
+} as const;
+
+export const CreatePatientDTOSchema = {
+    properties: {
+        username: {
+            type: 'string',
+            maxLength: 50,
+            minLength: 3,
+            title: 'Username'
+        },
+        password: {
+            type: 'string',
+            minLength: 6,
+            title: 'Password'
+        },
+        full_name: {
+            type: 'string',
+            maxLength: 150,
+            minLength: 1,
+            title: 'Full Name'
+        },
+        email: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'email'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Email'
+        },
+        phone_number: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Phone Number'
+        },
+        nik: {
+            type: 'string',
+            maxLength: 16,
+            minLength: 16,
+            title: 'Nik',
+            description: 'NIK Indonesia (16 digits)'
+        },
+        date_of_birth: {
+            type: 'string',
+            format: 'date',
+            title: 'Date Of Birth',
+            description: 'Date of birth'
+        },
+        gender: {
+            '$ref': '#/components/schemas/GenderEnum',
+            description: 'Gender (L/P)'
+        },
+        bpjs_number: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 20
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Bpjs Number',
+            description: 'BPJS number (optional)'
+        },
+        blood_type: {
+            anyOf: [
+                {
+                    '$ref': '#/components/schemas/BloodTypeEnum'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            description: 'Blood type'
+        },
+        address: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Address',
+            description: 'Full address'
+        },
+        emergency_contact_name: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 100
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Emergency Contact Name',
+            description: 'Emergency contact name'
+        },
+        emergency_contact_phone: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 20
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Emergency Contact Phone',
+            description: 'Emergency contact phone'
+        }
+    },
+    additionalProperties: false,
+    type: 'object',
+    required: ['username', 'password', 'full_name', 'nik', 'date_of_birth', 'gender'],
+    title: 'CreatePatientDTO',
+    description: 'DTO for creating a patient user with patient profile fields'
+} as const;
+
+export const CreateStaffDTOSchema = {
+    properties: {
+        username: {
+            type: 'string',
+            maxLength: 50,
+            minLength: 3,
+            title: 'Username'
+        },
+        password: {
+            type: 'string',
+            minLength: 6,
+            title: 'Password'
+        },
+        full_name: {
+            type: 'string',
+            maxLength: 150,
+            minLength: 1,
+            title: 'Full Name'
+        },
+        email: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'email'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Email'
+        },
+        phone_number: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Phone Number'
+        },
+        department: {
+            '$ref': '#/components/schemas/StaffDepartmentEnum',
+            description: 'Staff department: Registration/Pharmacy/Laboratory/Cashier'
+        }
+    },
+    additionalProperties: false,
+    type: 'object',
+    required: ['username', 'password', 'full_name', 'department'],
+    title: 'CreateStaffDTO',
+    description: 'DTO for creating a staff user with staff profile fields'
 } as const;
 
 export const CreateUserDTOSchema = {
@@ -1293,6 +1430,68 @@ export const LabOrderDTOSchema = {
     type: 'object',
     required: ['lab_test_id', 'id', 'visit_id', 'doctor_id', 'order_status', 'created_at', 'updated_at'],
     title: 'LabOrderDTO'
+} as const;
+
+export const LabOrderUpdateStatusDTOSchema = {
+    properties: {
+        order_status: {
+            type: 'string',
+            title: 'Order Status'
+        },
+        result: {
+            anyOf: [
+                {
+                    '$ref': '#/components/schemas/LabResultBase'
+                },
+                {
+                    type: 'null'
+                }
+            ]
+        }
+    },
+    type: 'object',
+    required: ['order_status'],
+    title: 'LabOrderUpdateStatusDTO'
+} as const;
+
+export const LabResultBaseSchema = {
+    properties: {
+        result_value: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Result Value'
+        },
+        result_unit: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Result Unit'
+        },
+        interpretation: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Interpretation'
+        }
+    },
+    type: 'object',
+    title: 'LabResultBase'
 } as const;
 
 export const LabResultDTOSchema = {
@@ -3173,6 +3372,79 @@ export const ReferralDTOSchema = {
     title: 'ReferralDTO'
 } as const;
 
+export const ReferralUpdateDTOSchema = {
+    properties: {
+        referred_to_facility: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Referred To Facility'
+        },
+        specialty: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Specialty'
+        },
+        reason: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Reason'
+        },
+        diagnosis: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Diagnosis'
+        },
+        notes: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Notes'
+        },
+        referral_status: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Referral Status'
+        }
+    },
+    type: 'object',
+    title: 'ReferralUpdateDTO'
+} as const;
+
 export const RegisterDTOSchema = {
     properties: {
         username: {
@@ -3214,12 +3486,92 @@ export const RegisterDTOSchema = {
                 }
             ],
             title: 'Phone Number'
+        },
+        nik: {
+            type: 'string',
+            maxLength: 16,
+            minLength: 16,
+            title: 'Nik',
+            description: 'NIK Indonesia (16 digits)'
+        },
+        date_of_birth: {
+            type: 'string',
+            format: 'date',
+            title: 'Date Of Birth',
+            description: 'Date of birth'
+        },
+        gender: {
+            '$ref': '#/components/schemas/GenderEnum',
+            description: 'Gender (L/P)'
+        },
+        bpjs_number: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 20
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Bpjs Number',
+            description: 'BPJS number (optional)'
+        },
+        blood_type: {
+            anyOf: [
+                {
+                    '$ref': '#/components/schemas/BloodTypeEnum'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            description: 'Blood type'
+        },
+        address: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Address',
+            description: 'Full address'
+        },
+        emergency_contact_name: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 100
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Emergency Contact Name',
+            description: 'Emergency contact name'
+        },
+        emergency_contact_phone: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 20
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Emergency Contact Phone',
+            description: 'Emergency contact phone'
         }
     },
     additionalProperties: false,
     type: 'object',
-    required: ['username', 'password', 'full_name'],
-    title: 'RegisterDTO'
+    required: ['username', 'password', 'full_name', 'nik', 'date_of_birth', 'gender'],
+    title: 'RegisterDTO',
+    description: 'Patient self-registration DTO with patient profile fields'
 } as const;
 
 export const StaffDepartmentEnumSchema = {
@@ -3574,6 +3926,59 @@ export const UpdateStaffProfileDTOSchema = {
     title: 'UpdateStaffProfileDTO'
 } as const;
 
+export const UpdateUserAdminDTOSchema = {
+    properties: {
+        full_name: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Full Name'
+        },
+        email: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'email'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Email'
+        },
+        phone_number: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Phone Number'
+        },
+        is_active: {
+            anyOf: [
+                {
+                    type: 'boolean'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Is Active'
+        }
+    },
+    additionalProperties: false,
+    type: 'object',
+    title: 'UpdateUserAdminDTO'
+} as const;
+
 export const UserDAOSchema = {
     properties: {
         id: {
@@ -3739,15 +4144,15 @@ export const VisitCreateDTOSchema = {
             format: 'date-time',
             title: 'Visit Datetime'
         },
-        patient_id: {
+        patient_user_id: {
             type: 'string',
             format: 'uuid',
-            title: 'Patient Id'
+            title: 'Patient User Id'
         },
-        doctor_id: {
+        doctor_user_id: {
             type: 'string',
             format: 'uuid',
-            title: 'Doctor Id'
+            title: 'Doctor User Id'
         },
         clinic_id: {
             type: 'string',
@@ -3756,7 +4161,7 @@ export const VisitCreateDTOSchema = {
         }
     },
     type: 'object',
-    required: ['patient_id', 'doctor_id', 'clinic_id'],
+    required: ['patient_user_id', 'doctor_user_id', 'clinic_id'],
     title: 'VisitCreateDTO'
 } as const;
 

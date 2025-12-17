@@ -109,6 +109,7 @@ class AuthUseCase:
         )
 
     async def register(self, req: RegisterDTO) -> UserDAO:
+        """Register a new patient user with patient profile"""
         existing_user = await self.user_repository.get_user_by_username(
             req.username
         )
@@ -118,12 +119,15 @@ class AuthUseCase:
             )
 
         if req.email:
-            existing_email = await self.user_repository.get_user_by_email(req.email)
+            existing_email = await self.user_repository.get_user_by_email(
+                req.email
+            )
             if existing_email:
                 raise BusinessLogicException(
                     f"Email '{req.email}' already exists"
                 )
 
+        # Create user
         hashed_password = get_password_hash(req.password)
         new_user = User(
             username=req.username,
@@ -135,6 +139,25 @@ class AuthUseCase:
             is_active=True
         )
         created_user = await self.user_repository.create_user(new_user)
+
+        # Create patient profile
+        from backend.module.profile.entity.models import Patient
+        patient = Patient(
+            user_id=created_user.id,
+            nik=req.nik,
+            date_of_birth=req.date_of_birth,
+            gender=req.gender,
+            bpjs_number=req.bpjs_number,
+            blood_type=req.blood_type,
+            address=req.address,
+            emergency_contact_name=req.emergency_contact_name,
+            emergency_contact_phone=req.emergency_contact_phone
+        )
+        await self.profile_repository.create_patient(patient)
+
+        # Flush to ensure all changes are committed
+        await self.user_repository.session.flush()
+
         return UserDAO.model_validate(created_user)
 
     async def logout(self, refresh_token: str) -> None:

@@ -15,7 +15,7 @@ from sqlalchemy.orm import relationship
 class Staff(Base):
     __tablename__ = "staff"
     id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(PG_UUID(as_uuid=True), ForeignKey("users.id"), unique=True, nullable=False)
+    user_id = Column(PG_UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False)
     department = Column(
         Enum(StaffDepartmentEnum, name="staff_department_enum", create_type=False),
         nullable=False
@@ -26,7 +26,7 @@ class Staff(Base):
 class Doctor(Base):
     __tablename__ = "doctors"
     id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(PG_UUID(as_uuid=True), ForeignKey("users.id"), unique=True, nullable=False)
+    user_id = Column(PG_UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False)
     specialty = Column(String(100))
     sip_number = Column(String(50))
     str_number = Column(String(50))
@@ -36,7 +36,7 @@ class Doctor(Base):
 class Patient(Base):
     __tablename__ = "patients"
     id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(PG_UUID(as_uuid=True), ForeignKey("users.id"), unique=True, nullable=False)
+    user_id = Column(PG_UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False)
     nik = Column(String(16), unique=True, nullable=False)
     bpjs_number = Column(String(20))
     date_of_birth = Column(Date, nullable=False)

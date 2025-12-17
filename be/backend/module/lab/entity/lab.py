@@ -30,9 +30,9 @@ class LabOrder(Base):
 
     id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     visit_id = Column(PG_UUID(as_uuid=True), ForeignKey("visits.id", ondelete="CASCADE"), nullable=False)
-    doctor_id = Column(PG_UUID(as_uuid=True), ForeignKey("doctors.id"), nullable=False)
+    doctor_id = Column(PG_UUID(as_uuid=True), ForeignKey("doctors.id", ondelete="SET NULL"), nullable=True)
     lab_staff_id = Column(PG_UUID(as_uuid=True), ForeignKey("staff.id"), nullable=True)
-    lab_test_id = Column(PG_UUID(as_uuid=True), ForeignKey("lab_tests.id"), nullable=False)
+    lab_test_id = Column(PG_UUID(as_uuid=True), ForeignKey("lab_tests.id", ondelete="SET NULL"), nullable=True)
     order_status = Column(String, default=OrderStatusEnum.PENDING.value, nullable=False)
     notes = Column(Text, nullable=True)
 
@@ -40,11 +40,11 @@ class LabOrder(Base):
     updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
     # Relationships
-    visit = relationship("Visit", backref="lab_orders", lazy="joined")
+    visit = relationship("Visit", backref="lab_orders", lazy="select")
     # doctor = relationship("Doctor", backref="lab_orders")
     # lab_staff = relationship("Staff", backref="processed_lab_orders")
-    lab_test = relationship("LabTest", lazy="joined")
-    result = relationship("LabResult", uselist=False, back_populates="lab_order", cascade="all, delete-orphan", lazy="joined")
+    lab_test = relationship("LabTest", lazy="select")
+    result = relationship("LabResult", uselist=False, back_populates="lab_order", cascade="all, delete-orphan", lazy="select")
 
 
 class LabResult(Base):

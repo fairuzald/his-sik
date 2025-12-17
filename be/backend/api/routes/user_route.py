@@ -7,7 +7,7 @@ from backend.api.middleware.auth import (
     require_admin,
     require_registration_access,
 )
-from backend.module.user.entity.admin_dto import CreateUserDTO
+from backend.module.user.entity.admin_dto import CreateUserDTO, UpdateUserAdminDTO
 from backend.module.user.entity.user_dao import UserDAO
 from backend.pkg.core.response_models import ApiResponse, PaginatedApiResponse
 
@@ -17,12 +17,14 @@ router = APIRouter(
 )
 
 
-@router.post("", response_model=ApiResponse[UserDAO], dependencies=[Depends(require_admin)])
+@router.post("", response_model=ApiResponse[UserDAO], dependencies=[Depends(require_registration_access)])
 async def create_user(
     req: CreateUserDTO,
     handler: AdminUserHandler = Depends()
 ):
-    """Create a new user. Admin only."""
+    """
+    Create a new user. Admin only.
+    """
     return await handler.create_user(req)
 
 
@@ -36,3 +38,15 @@ async def list_users(
 ):
     """List users. Admin or Registration Staff only."""
     return await handler.list_users(page, limit, search, roles)
+
+
+@router.patch("/{user_id}", response_model=ApiResponse[UserDAO], dependencies=[Depends(require_admin)])
+async def update_user(
+    user_id: str,
+    req: UpdateUserAdminDTO,
+    handler: AdminUserHandler = Depends()
+):
+    """
+    Update user details. Admin only.
+    """
+    return await handler.update_user(user_id, req)

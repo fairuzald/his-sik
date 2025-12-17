@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/breadcrumb";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { safeApiCall } from "@/lib/api-handler";
+import { RoleEnum } from "@/lib/enums";
 import { listUsersApiUsersGet } from "@/sdk/output/sdk.gen";
 import { UserDao } from "@/sdk/output/types.gen";
 import { Loader2 } from "lucide-react";
@@ -105,7 +106,7 @@ export default function EditUserPage() {
               username: user.username || "",
               email: user.email || "",
               phone_number: user.phone_number || "",
-              role: user.role || "patient",
+              role: (user.role as RoleEnum) || RoleEnum.PATIENT,
             }}
             onSubmit={onSubmit}
             isAdmin={true}

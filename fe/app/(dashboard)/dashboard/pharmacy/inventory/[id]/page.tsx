@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { safeApiCall } from "@/lib/api-handler";
 import {
   getMedicineApiMedicinesMedicineIdGet,
-  updateMedicineApiMedicinesMedicineIdPut,
+  updateMedicineApiMedicinesMedicineIdPatch,
 } from "@/sdk/output/sdk.gen";
 import { MedicineDto } from "@/sdk/output/types.gen";
 import { ArrowLeft, Loader2 } from "lucide-react";
@@ -47,7 +47,7 @@ export default function EditMedicinePage() {
     setIsSubmitting(true);
 
     const result = await safeApiCall(
-      updateMedicineApiMedicinesMedicineIdPut({
+      updateMedicineApiMedicinesMedicineIdPatch({
         path: { medicine_id: params.id },
         body: {
           medicine_code: data.medicine_code,

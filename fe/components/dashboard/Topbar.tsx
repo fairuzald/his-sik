@@ -14,13 +14,37 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { logoutApiAuthLogoutPost } from "@/sdk/output/sdk.gen";
+import Cookies from "js-cookie";
 import { Bell, Menu, Search } from "lucide-react";
-import { usePathname } from "next/navigation";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export function Topbar() {
   const pathname = usePathname();
+  const router = useRouter();
   const roleFromPath = pathname.split("/")[2];
   const currentRole = roleFromPath || "patient";
+
+  const handleLogout = async () => {
+    try {
+      const refreshToken = Cookies.get("refresh_token");
+      if (refreshToken) {
+        await logoutApiAuthLogoutPost({
+          body: { refresh_token: refreshToken },
+        });
+      }
+      toast.success("Logged out successfully");
+    } catch (error) {
+      console.error("Logout failed", error);
+      toast.error("Logout failed, causing local logout");
+    } finally {
+      Cookies.remove("access_token");
+      Cookies.remove("refresh_token");
+      router.push("/login");
+    }
+  };
 
   return (
     <header className="border-border/40 sticky top-0 z-50 flex h-14 items-center gap-4 border-b bg-white/80 px-6 shadow-sm backdrop-blur-md">
@@ -65,10 +89,11 @@ export function Topbar() {
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>My Account</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Profile</DropdownMenuItem>
-            <DropdownMenuItem>Settings</DropdownMenuItem>
+            <DropdownMenuItem>
+              <Link href="/dashboard/patient/profile">Profile </Link>
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Logout</DropdownMenuItem>
+            <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

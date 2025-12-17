@@ -59,7 +59,7 @@ async def get_prescription(
     return await handler.get_prescription(prescription_id, profile)
 
 
-@router.put("/{prescription_id}", response_model=ApiResponse[PrescriptionDTO], dependencies=[Depends(require_doctor)])
+@router.patch("/{prescription_id}", response_model=ApiResponse[PrescriptionDTO], dependencies=[Depends(require_doctor)])
 async def update_prescription(
     prescription_id: UUID,
     req: PrescriptionUpdateDTO,

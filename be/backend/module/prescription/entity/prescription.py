@@ -14,7 +14,7 @@ class Prescription(Base):
 
     id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     visit_id = Column(PG_UUID(as_uuid=True), ForeignKey("visits.id", ondelete="CASCADE"), unique=True, nullable=False)
-    doctor_id = Column(PG_UUID(as_uuid=True), ForeignKey("doctors.id"), nullable=False)
+    doctor_id = Column(PG_UUID(as_uuid=True), ForeignKey("doctors.id", ondelete="SET NULL"), nullable=True)
     pharmacy_staff_id = Column(PG_UUID(as_uuid=True), ForeignKey("staff.id"), nullable=True)
     prescription_status = Column(String, nullable=False, default=PrescriptionStatusEnum.PENDING.value)
     notes = Column(Text, nullable=True)
@@ -34,7 +34,7 @@ class PrescriptionItem(Base):
 
     id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     prescription_id = Column(PG_UUID(as_uuid=True), ForeignKey("prescriptions.id", ondelete="CASCADE"), nullable=False)
-    medicine_id = Column(PG_UUID(as_uuid=True), ForeignKey("medicines.id"), nullable=False)
+    medicine_id = Column(PG_UUID(as_uuid=True), ForeignKey("medicines.id", ondelete="SET NULL"), nullable=True)
     quantity = Column(Integer, nullable=False)
     dosage = Column(String(50), nullable=True)
     frequency = Column(String(50), nullable=True)

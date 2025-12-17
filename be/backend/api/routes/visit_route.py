@@ -58,7 +58,7 @@ async def get_visit(
     return await handler.get_visit(visit_id, profile)
 
 
-@router.put("/{visit_id}", response_model=ApiResponse[VisitDTO], dependencies=[Depends(require_admin_or_doctor)])
+@router.patch("/{visit_id}", response_model=ApiResponse[VisitDTO], dependencies=[Depends(require_admin_or_doctor)])
 async def update_visit(
     visit_id: UUID,
     req: VisitUpdateDTO,

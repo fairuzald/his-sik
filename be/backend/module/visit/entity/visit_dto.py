@@ -14,8 +14,8 @@ class VisitBase(BaseModel):
 
 
 class VisitCreateDTO(VisitBase):
-    patient_id: UUID
-    doctor_id: UUID
+    patient_user_id: UUID  # User ID of the patient, will be converted to patient table ID
+    doctor_user_id: UUID  # User ID of the doctor, will be converted to doctor table ID
     clinic_id: UUID
     # registration_staff_id will be taken from the authenticated user
 

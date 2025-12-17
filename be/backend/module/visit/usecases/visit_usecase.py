@@ -4,21 +4,41 @@ from typing import Optional
 from uuid import UUID
 
 from backend.module.common.enums import RoleEnum, VisitStatusEnum
+from backend.module.profile.repositories.profile_repository import \
+    ProfileRepository
 from backend.module.visit.entity.visit import Visit
-from backend.module.visit.entity.visit_dto import VisitCreateDTO, VisitUpdateDTO
+from backend.module.visit.entity.visit_dto import (VisitCreateDTO,
+                                                   VisitUpdateDTO)
 from backend.module.visit.repositories.visit_repository import VisitRepository
-from backend.pkg.core.exceptions import AuthorizationException, NotFoundException
+from backend.pkg.core.exceptions import (AuthorizationException,
+                                         BusinessLogicException,
+                                         NotFoundException)
 
 
 class VisitUseCase:
-    def __init__(self, visit_repository: VisitRepository):
+    def __init__(self, visit_repository: VisitRepository, profile_repository: ProfileRepository):
         self.visit_repository = visit_repository
+        self.profile_repository = profile_repository
 
     async def create_visit(self, req: VisitCreateDTO, staff_id: UUID) -> Visit:
         """Create a visit. Authorization handled by middleware."""
+        # Convert patient user_id to patient table id
+        patient = await self.profile_repository.get_patient_by_user_id(req.patient_user_id)
+        if not patient:
+            raise BusinessLogicException(
+                "Patient profile not found. The user must be registered as a patient first."
+            )
+
+        # Convert doctor user_id to doctor table id
+        doctor = await self.profile_repository.get_doctor_by_user_id(req.doctor_user_id)
+        if not doctor:
+            raise BusinessLogicException(
+                "Doctor profile not found. The selected user is not a registered doctor."
+            )
+
         new_visit = Visit(
-            patient_id=req.patient_id,
-            doctor_id=req.doctor_id,
+            patient_id=patient.id,
+            doctor_id=doctor.id,
             registration_staff_id=staff_id,
             clinic_id=req.clinic_id,
             visit_datetime=req.visit_datetime,
@@ -35,10 +55,28 @@ class VisitUseCase:
             raise NotFoundException(f"Visit with id {visit_id} not found")
 
         # Ownership check for patients and doctors
-        if role == RoleEnum.DOCTOR.value and visit.doctor_id != user_id:
-            raise NotFoundException("Visit not found")
-        elif role == RoleEnum.PATIENT.value and visit.patient_id != user_id:
-            raise NotFoundException("Visit not found")
+        if role == RoleEnum.DOCTOR.value:
+            doctor = await self.profile_repository.get_doctor_by_user_id(
+                user_id
+            )
+            if not doctor:
+                raise BusinessLogicException(
+                    "You don't have a doctor profile. "
+                    "Please contact admin to complete your profile setup."
+                )
+            if visit.doctor_id != doctor.id:
+                raise NotFoundException("Visit not found")
+        elif role == RoleEnum.PATIENT.value:
+            patient = await self.profile_repository.get_patient_by_user_id(
+                user_id
+            )
+            if not patient:
+                raise BusinessLogicException(
+                    "You don't have a patient profile. "
+                    "Please contact admin to complete your profile setup."
+                )
+            if visit.patient_id != patient.id:
+                raise NotFoundException("Visit not found")
 
         return visit
 
@@ -50,7 +88,8 @@ class VisitUseCase:
 
         # Doctor can only update status of their own visits
         if role == RoleEnum.DOCTOR.value:
-            if visit.doctor_id != user_id:
+            doctor = await self.profile_repository.get_doctor_by_user_id(user_id)
+            if not doctor or visit.doctor_id != doctor.id:
                 raise AuthorizationException("Not authorized to update this visit")
             # Doctor can only update status
             if req.visit_status:
@@ -95,9 +134,15 @@ class VisitUseCase:
         filter_doctor_id = None
 
         if role == RoleEnum.DOCTOR.value:
-            filter_doctor_id = user_id
+            # Convert user_id to doctor table id
+            doctor = await self.profile_repository.get_doctor_by_user_id(user_id)
+            if doctor:
+                filter_doctor_id = doctor.id
         elif role == RoleEnum.PATIENT.value:
-            filter_patient_id = user_id
+            # Convert user_id to patient table id
+            patient = await self.profile_repository.get_patient_by_user_id(user_id)
+            if patient:
+                filter_patient_id = patient.id
         # Admin/Staff see all
 
         return await self.visit_repository.list_visits(

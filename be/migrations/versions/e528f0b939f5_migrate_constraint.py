@@ -1,8 +1,8 @@
-"""initial
+"""migrate_constraint
 
-Revision ID: 636563242073
+Revision ID: e528f0b939f5
 Revises: 
-Create Date: 2025-12-16 14:07:43.890307
+Create Date: 2025-12-17 17:36:23.489970
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = '636563242073'
+revision: str = 'e528f0b939f5'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -75,7 +75,7 @@ def upgrade() -> None:
     sa.Column('specialty', sa.String(length=100), nullable=True),
     sa.Column('sip_number', sa.String(length=50), nullable=True),
     sa.Column('str_number', sa.String(length=50), nullable=True),
-    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('user_id')
     )
@@ -90,7 +90,7 @@ def upgrade() -> None:
     sa.Column('address', sa.Text(), nullable=True),
     sa.Column('emergency_contact_name', sa.String(length=100), nullable=True),
     sa.Column('emergency_contact_phone', sa.String(length=20), nullable=True),
-    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('nik'),
     sa.UniqueConstraint('user_id')
@@ -99,7 +99,7 @@ def upgrade() -> None:
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('user_id', sa.UUID(), nullable=False),
     sa.Column('department', sa.Enum('REGISTRATION', 'PHARMACY', 'LABORATORY', 'CASHIER', name='staff_department_enum'), nullable=False),
-    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('user_id')
     )
@@ -118,9 +118,9 @@ def upgrade() -> None:
     op.create_table('visits',
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('patient_id', sa.UUID(), nullable=False),
-    sa.Column('doctor_id', sa.UUID(), nullable=False),
-    sa.Column('registration_staff_id', sa.UUID(), nullable=False),
-    sa.Column('clinic_id', sa.UUID(), nullable=False),
+    sa.Column('doctor_id', sa.UUID(), nullable=True),
+    sa.Column('registration_staff_id', sa.UUID(), nullable=True),
+    sa.Column('clinic_id', sa.UUID(), nullable=True),
     sa.Column('queue_number', sa.Integer(), nullable=True),
     sa.Column('visit_datetime', sa.DateTime(timezone=True), nullable=False),
     sa.Column('visit_type', sa.Enum('GENERAL', 'FOLLOW_UP', 'REFERRAL', 'EMERGENCY', name='visit_type_enum'), nullable=False),
@@ -128,10 +128,10 @@ def upgrade() -> None:
     sa.Column('visit_status', sa.Enum('REGISTERED', 'EXAMINING', 'COMPLETED', 'CANCELED', name='visit_status_enum'), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
     sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
-    sa.ForeignKeyConstraint(['clinic_id'], ['clinic.id'], ),
-    sa.ForeignKeyConstraint(['doctor_id'], ['doctors.id'], ),
+    sa.ForeignKeyConstraint(['clinic_id'], ['clinic.id'], ondelete='SET NULL'),
+    sa.ForeignKeyConstraint(['doctor_id'], ['doctors.id'], ondelete='SET NULL'),
     sa.ForeignKeyConstraint(['patient_id'], ['patients.id'], ondelete='CASCADE'),
-    sa.ForeignKeyConstraint(['registration_staff_id'], ['staff.id'], ),
+    sa.ForeignKeyConstraint(['registration_staff_id'], ['staff.id'], ondelete='SET NULL'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('wearable_devices',
@@ -150,7 +150,7 @@ def upgrade() -> None:
     op.create_table('invoices',
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('visit_id', sa.UUID(), nullable=False),
-    sa.Column('cashier_id', sa.UUID(), nullable=False),
+    sa.Column('cashier_id', sa.UUID(), nullable=True),
     sa.Column('total_amount', sa.Numeric(precision=10, scale=2), nullable=False),
     sa.Column('amount_paid', sa.Numeric(precision=10, scale=2), nullable=False),
     sa.Column('payment_status', sa.String(), nullable=False),
@@ -158,7 +158,7 @@ def upgrade() -> None:
     sa.Column('notes', sa.Text(), nullable=True),
     sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
     sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
-    sa.ForeignKeyConstraint(['cashier_id'], ['staff.id'], ),
+    sa.ForeignKeyConstraint(['cashier_id'], ['staff.id'], ondelete='SET NULL'),
     sa.ForeignKeyConstraint(['visit_id'], ['visits.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('visit_id')
@@ -166,16 +166,16 @@ def upgrade() -> None:
     op.create_table('lab_orders',
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('visit_id', sa.UUID(), nullable=False),
-    sa.Column('doctor_id', sa.UUID(), nullable=False),
+    sa.Column('doctor_id', sa.UUID(), nullable=True),
     sa.Column('lab_staff_id', sa.UUID(), nullable=True),
-    sa.Column('lab_test_id', sa.UUID(), nullable=False),
+    sa.Column('lab_test_id', sa.UUID(), nullable=True),
     sa.Column('order_status', sa.String(), nullable=False),
     sa.Column('notes', sa.Text(), nullable=True),
     sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
     sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
-    sa.ForeignKeyConstraint(['doctor_id'], ['doctors.id'], ),
+    sa.ForeignKeyConstraint(['doctor_id'], ['doctors.id'], ondelete='SET NULL'),
     sa.ForeignKeyConstraint(['lab_staff_id'], ['staff.id'], ),
-    sa.ForeignKeyConstraint(['lab_test_id'], ['lab_tests.id'], ),
+    sa.ForeignKeyConstraint(['lab_test_id'], ['lab_tests.id'], ondelete='SET NULL'),
     sa.ForeignKeyConstraint(['visit_id'], ['visits.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
@@ -197,13 +197,13 @@ def upgrade() -> None:
     op.create_table('prescriptions',
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('visit_id', sa.UUID(), nullable=False),
-    sa.Column('doctor_id', sa.UUID(), nullable=False),
+    sa.Column('doctor_id', sa.UUID(), nullable=True),
     sa.Column('pharmacy_staff_id', sa.UUID(), nullable=True),
     sa.Column('prescription_status', sa.String(), nullable=False),
     sa.Column('notes', sa.Text(), nullable=True),
     sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
     sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
-    sa.ForeignKeyConstraint(['doctor_id'], ['doctors.id'], ),
+    sa.ForeignKeyConstraint(['doctor_id'], ['doctors.id'], ondelete='SET NULL'),
     sa.ForeignKeyConstraint(['pharmacy_staff_id'], ['staff.id'], ),
     sa.ForeignKeyConstraint(['visit_id'], ['visits.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id'),
@@ -213,7 +213,7 @@ def upgrade() -> None:
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('visit_id', sa.UUID(), nullable=False),
     sa.Column('patient_id', sa.UUID(), nullable=False),
-    sa.Column('referring_doctor_id', sa.UUID(), nullable=False),
+    sa.Column('referring_doctor_id', sa.UUID(), nullable=True),
     sa.Column('referred_to_facility', sa.String(length=150), nullable=False),
     sa.Column('specialty', sa.String(length=100), nullable=True),
     sa.Column('reason', sa.Text(), nullable=False),
@@ -224,7 +224,7 @@ def upgrade() -> None:
     sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
     sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
     sa.ForeignKeyConstraint(['patient_id'], ['patients.id'], ondelete='CASCADE'),
-    sa.ForeignKeyConstraint(['referring_doctor_id'], ['doctors.id'], ),
+    sa.ForeignKeyConstraint(['referring_doctor_id'], ['doctors.id'], ondelete='SET NULL'),
     sa.ForeignKeyConstraint(['visit_id'], ['visits.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
@@ -270,13 +270,13 @@ def upgrade() -> None:
     op.create_table('prescription_items',
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('prescription_id', sa.UUID(), nullable=False),
-    sa.Column('medicine_id', sa.UUID(), nullable=False),
+    sa.Column('medicine_id', sa.UUID(), nullable=True),
     sa.Column('quantity', sa.Integer(), nullable=False),
     sa.Column('dosage', sa.String(length=50), nullable=True),
     sa.Column('frequency', sa.String(length=50), nullable=True),
     sa.Column('duration', sa.String(length=30), nullable=True),
     sa.Column('instructions', sa.Text(), nullable=True),
-    sa.ForeignKeyConstraint(['medicine_id'], ['medicines.id'], ),
+    sa.ForeignKeyConstraint(['medicine_id'], ['medicines.id'], ondelete='SET NULL'),
     sa.ForeignKeyConstraint(['prescription_id'], ['prescriptions.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
