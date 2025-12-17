@@ -5,6 +5,7 @@ import { WearableChart } from "@/components/dashboard/WearableChart";
 import { H2, H4, P, Small } from "@/components/elements/typography";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { safeApiCall } from "@/lib/api-handler";
 import {
   getMyProfileApiProfileMeGet,
   listClinicsApiClinicsGet,
@@ -39,72 +40,67 @@ export default function PatientDashboard() {
 
   useEffect(() => {
     const loadDashboardData = async () => {
-      try {
-        // 1. Fetch Profile
-        const profileRes = await getMyProfileApiProfileMeGet();
-        if (profileRes.data?.success && profileRes.data.data) {
-          setName(profileRes.data.data.full_name.split(" ")[0]);
-        }
-
-        // 2. Fetch Clinics (for mapping names)
-        const clinicsRes = await listClinicsApiClinicsGet();
-        const clinicMap: Record<string, string> = {};
-        if (clinicsRes.data?.success && clinicsRes.data.data) {
-          clinicsRes.data.data.forEach((c: ClinicDto) => {
-            clinicMap[c.id] = c.name;
-          });
-          setClinics(clinicMap);
-        }
-
-        // 3. Fetch Visits
-        const visitsRes = await listVisitsApiVisitsGet();
-        if (visitsRes.data?.success && visitsRes.data.data) {
-          setVisits(visitsRes.data.data);
-        }
-
-        // 4. Fetch Invoices
-        const invoicesRes = await listInvoicesApiInvoicesGet();
-        if (invoicesRes.data?.success && invoicesRes.data.data) {
-          setInvoices(invoicesRes.data.data);
-        }
-
-        // 5. Fetch Prescriptions
-        const prescriptionsRes = await listPrescriptionsApiPrescriptionsGet();
-        if (prescriptionsRes.data?.success && prescriptionsRes.data.data) {
-          setPrescriptions(prescriptionsRes.data.data);
-        }
-
-        // 6. Fetch Wearables (Try to get first device and its measurements)
-        const devicesRes = await listDevicesApiWearablesDevicesGet();
-        if (
-          devicesRes.data?.success &&
-          devicesRes.data.data &&
-          devicesRes.data.data.length > 0
-        ) {
-          const firstDevice = devicesRes.data.data[0];
-          const measurementsRes =
-            await listMeasurementsApiWearablesDevicesDeviceIdMeasurementsGet({
-              path: { device_id: firstDevice.id },
-            });
-          if (measurementsRes.data?.success && measurementsRes.data.data) {
-            // Transform for chart
-            const chartData = measurementsRes.data.data
-              .map((m: WearableMeasurementDto) => ({
-                time: m.recorded_at
-                  ? format(new Date(m.recorded_at), "HH:mm")
-                  : "",
-                value: m.heart_rate || 0,
-              }))
-              .filter(d => d.value > 0)
-              .slice(-10); // Last 10 points
-            setHeartRateData(chartData);
-          }
-        }
-      } catch (error) {
-        console.error("Failed to load dashboard data", error);
-      } finally {
-        setIsLoading(false);
+      // 1. Fetch Profile
+      const profile = await safeApiCall(getMyProfileApiProfileMeGet());
+      if (profile) {
+        setName(profile.full_name.split(" ")[0]);
       }
+
+      // 2. Fetch Clinics (for mapping names)
+      const clinicsData = await safeApiCall(listClinicsApiClinicsGet());
+      const clinicMap: Record<string, string> = {};
+      if (clinicsData) {
+        clinicsData.forEach((c: ClinicDto) => {
+          clinicMap[c.id] = c.name;
+        });
+        setClinics(clinicMap);
+      }
+
+      // 3. Fetch Visits
+      const visitsData = await safeApiCall(listVisitsApiVisitsGet());
+      if (visitsData) {
+        setVisits(visitsData);
+      }
+
+      // 4. Fetch Invoices
+      const invoicesData = await safeApiCall(listInvoicesApiInvoicesGet());
+      if (invoicesData) {
+        setInvoices(invoicesData);
+      }
+
+      // 5. Fetch Prescriptions
+      const prescriptionsData = await safeApiCall(
+        listPrescriptionsApiPrescriptionsGet()
+      );
+      if (prescriptionsData) {
+        setPrescriptions(prescriptionsData);
+      }
+
+      // 6. Fetch Wearables (Try to get first device and its measurements)
+      const devices = await safeApiCall(listDevicesApiWearablesDevicesGet());
+      if (devices && devices.length > 0) {
+        const firstDevice = devices[0];
+        const measurements = await safeApiCall(
+          listMeasurementsApiWearablesDevicesDeviceIdMeasurementsGet({
+            path: { device_id: firstDevice.id },
+          })
+        );
+        if (measurements) {
+          // Transform for chart
+          const chartData = measurements
+            .map((m: WearableMeasurementDto) => ({
+              time: m.recorded_at
+                ? format(new Date(m.recorded_at), "HH:mm")
+                : "",
+              value: m.heart_rate || 0,
+            }))
+            .filter(d => d.value > 0)
+            .slice(-10); // Last 10 points
+          setHeartRateData(chartData);
+        }
+      }
+
+      setIsLoading(false);
     };
 
     loadDashboardData();

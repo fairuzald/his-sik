@@ -5,11 +5,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { safeApiCall } from "@/lib/api-handler";
-import { getDashboardPathForRole, setAuthTokens } from "@/lib/auth";
+import {
+  getDashboardPathForRole,
+  getDashboardPathForStaffDepartment,
+  setAuthTokens,
+} from "@/lib/auth";
 import {
   getMyProfileApiProfileMeGet,
   loginApiAuthLoginPost,
 } from "@/sdk/output/sdk.gen";
+import { StaffDepartmentEnum } from "@/sdk/output/types.gen";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -63,9 +68,26 @@ export default function LoginPage() {
       });
 
       if (profileData) {
-        const role = profileData.role;
-        const targetPath = getDashboardPathForRole(role);
-        router.push(targetPath);
+        const role = profileData.role.toLowerCase();
+
+        // Handle staff users by redirecting based on department
+        if (role === "staff" && profileData.details) {
+          const staffDetails = profileData.details as {
+            department?: StaffDepartmentEnum;
+          };
+          if (staffDetails.department) {
+            const targetPath = getDashboardPathForStaffDepartment(
+              staffDetails.department
+            );
+            router.push(targetPath);
+          } else {
+            router.push("/dashboard");
+          }
+        } else {
+          // For admin, doctor, patient - use role-based redirect
+          const targetPath = getDashboardPathForRole(role);
+          router.push(targetPath);
+        }
       } else {
         // Fallback
         router.push("/dashboard");

@@ -1,5 +1,6 @@
 import {
   Activity,
+  Building2,
   Calendar,
   ClipboardList,
   CreditCard,
@@ -110,5 +111,6 @@ export const navItems: Record<string, NavItem[]> = {
   admin: [
     { title: "Dashboard", href: "/dashboard/admin", icon: LayoutDashboard },
     { title: "Users", href: "/dashboard/admin/users", icon: Users },
+    { title: "Clinics", href: "/dashboard/admin/clinics", icon: Building2 },
   ],
 };

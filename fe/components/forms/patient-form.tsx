@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Patient } from "@/data/mock-data";
+import { BloodTypeEnum, GenderEnum } from "@/lib/enums";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -29,12 +29,12 @@ const patientSchema = z.object({
   medical_record_number: z.string().optional(),
   bpjs_number: z.string().optional(),
   birth_place: z.string().optional(),
-  birth_date: z.string().optional(),
-  gender: z.enum(["M", "F"]),
-  blood_type: z.string().optional(),
+  date_of_birth: z.string().min(1, "Tanggal lahir wajib diisi"),
+  gender: z.nativeEnum(GenderEnum),
+  blood_type: z.nativeEnum(BloodTypeEnum).optional().or(z.literal("")),
   marital_status: z.string().optional(),
   religion: z.string().optional(),
-  full_address: z.string().optional(),
+  address: z.string().optional(),
   city: z.string().optional(),
   province: z.string().optional(),
   postal_code: z.string().optional(),
@@ -47,8 +47,10 @@ const patientSchema = z.object({
 type PatientFormValues = z.infer<typeof patientSchema>;
 
 interface PatientFormProps {
-  initialData?: Patient;
-  onSubmit: (data: Partial<Patient>) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  initialData?: any; // Relaxed type to allow mock or SDK data for now
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onSubmit: (data: any) => void;
   onCancel: () => void;
 }
 
@@ -57,28 +59,47 @@ export function PatientForm({
   onSubmit,
   onCancel,
 }: PatientFormProps) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const defaultValues: any = initialData
+    ? {
+        ...initialData,
+        date_of_birth:
+          initialData.date_of_birth || initialData.birth_date || "", // Handle both mock and eventual SDK
+        address: initialData.address || initialData.full_address || "",
+        gender:
+          initialData.gender === "M"
+            ? GenderEnum.L
+            : initialData.gender === "F"
+              ? GenderEnum.P
+              : initialData.gender,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        blood_type: initialData.blood_type as any,
+        status: initialData.status || "Active",
+      }
+    : {
+        full_name: "",
+        nik: "",
+        medical_record_number: "",
+        bpjs_number: "",
+        birth_place: "",
+        date_of_birth: "",
+        gender: GenderEnum.L,
+        blood_type: undefined,
+        marital_status: "",
+        religion: "",
+        address: "",
+        city: "",
+        province: "",
+        postal_code: "",
+        phone_number: "",
+        emergency_contact_name: "",
+        emergency_contact_phone: "",
+        status: "Active",
+      };
+
   const form = useForm<PatientFormValues>({
     resolver: zodResolver(patientSchema),
-    defaultValues: initialData || {
-      full_name: "",
-      nik: "",
-      medical_record_number: "",
-      bpjs_number: "",
-      birth_place: "",
-      birth_date: "",
-      gender: "M",
-      blood_type: "",
-      marital_status: "",
-      religion: "",
-      full_address: "",
-      city: "",
-      province: "",
-      postal_code: "",
-      phone_number: "",
-      emergency_contact_name: "",
-      emergency_contact_phone: "",
-      status: "Active",
-    },
+    defaultValues,
   });
 
   const handleSubmit = (data: PatientFormValues) => {
@@ -156,10 +177,10 @@ export function PatientForm({
           />
           <FormField
             control={form.control}
-            name="birth_date"
+            name="date_of_birth"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Tanggal Lahir</FormLabel>
+                <FormLabel>Tanggal Lahir *</FormLabel>
                 <FormControl>
                   <Input type="date" {...field} />
                 </FormControl>
@@ -183,8 +204,8 @@ export function PatientForm({
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="M">Laki-laki</SelectItem>
-                    <SelectItem value="F">Perempuan</SelectItem>
+                    <SelectItem value={GenderEnum.L}>Laki-laki</SelectItem>
+                    <SelectItem value={GenderEnum.P}>Perempuan</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -207,10 +228,11 @@ export function PatientForm({
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="A">A</SelectItem>
-                    <SelectItem value="B">B</SelectItem>
-                    <SelectItem value="AB">AB</SelectItem>
-                    <SelectItem value="O">O</SelectItem>
+                    {Object.values(BloodTypeEnum).map(type => (
+                      <SelectItem key={type} value={type}>
+                        {type}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -258,7 +280,7 @@ export function PatientForm({
 
         <FormField
           control={form.control}
-          name="full_address"
+          name="address"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Alamat Lengkap</FormLabel>

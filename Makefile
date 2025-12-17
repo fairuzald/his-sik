@@ -87,8 +87,21 @@ seed:
 	$(DC) exec app python -m backend.scripts.seed
 
 db-shell:
-	$(DC) exec postgres psql -U postgres -d his_db
 
+	$(DC) exec postgres psql -U postgres -d his_db
+db-reset:
+	@echo "🔄 Resetting database (WARNING: This will drop all data)..."
+	@read -p "Are you sure? Type 'yes' to continue: " confirm; \
+	if [ "$$confirm" = "yes" ]; then \
+		docker compose -f docker-compose.yml down -v; \
+		docker volume rm postgres_data || true; \
+		docker volume create postgres_data; \
+		docker compose -f docker-compose.yml up -d postgres; \
+		sleep 10; \
+		make db-migrate; \
+	else \
+		echo "❌ Database reset cancelled"; \
+	fi
 # =============================================================================
 # Development Commands (Local - without Docker)
 # =============================================================================

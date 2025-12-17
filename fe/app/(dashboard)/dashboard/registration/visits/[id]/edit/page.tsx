@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { safeApiCall } from "@/lib/api-handler";
 import {
   getVisitApiVisitsVisitIdGet,
-  updateVisitApiVisitsVisitIdPut,
+  updateVisitApiVisitsVisitIdPatch,
 } from "@/sdk/output/sdk.gen";
 import { VisitDto } from "@/sdk/output/types.gen";
 import { Loader2 } from "lucide-react";
@@ -42,7 +42,7 @@ export default function EditVisitPage() {
     if (typeof params.id !== "string") return;
     setIsSubmitting(true);
     const result = await safeApiCall(
-      updateVisitApiVisitsVisitIdPut({
+      updateVisitApiVisitsVisitIdPatch({
         path: { visit_id: params.id },
         body: {
           visit_type: data.visit_type,

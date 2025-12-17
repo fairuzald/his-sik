@@ -74,3 +74,13 @@ class UserRepository:
         users = result.scalars().all()
 
         return users, total
+
+    async def update_user(self, user: User) -> User:
+        """Update an existing user."""
+        await self.session.flush()
+        return user
+
+    async def delete_user(self, user: User) -> None:
+        """Delete a user."""
+        await self.session.delete(user)
+        await self.session.flush()

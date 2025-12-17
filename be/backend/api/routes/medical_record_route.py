@@ -58,7 +58,7 @@ async def get_medical_record(
     return await handler.get_medical_record(record_id, profile)
 
 
-@router.put("/{record_id}", response_model=ApiResponse[MedicalRecordDTO], dependencies=[Depends(require_doctor)])
+@router.patch("/{record_id}", response_model=ApiResponse[MedicalRecordDTO], dependencies=[Depends(require_doctor)])
 async def update_medical_record(
     record_id: UUID,
     req: MedicalRecordUpdateDTO,

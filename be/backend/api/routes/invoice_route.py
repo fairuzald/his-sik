@@ -52,7 +52,7 @@ async def get_invoice(
     return await handler.get_invoice(invoice_id, profile)
 
 
-@router.put("/{invoice_id}", response_model=ApiResponse[InvoiceDTO], dependencies=[Depends(require_cashier_access)])
+@router.patch("/{invoice_id}", response_model=ApiResponse[InvoiceDTO], dependencies=[Depends(require_cashier_access)])
 async def update_invoice(
     invoice_id: UUID,
     req: InvoiceUpdateDTO,

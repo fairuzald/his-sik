@@ -55,7 +55,7 @@ async def get_device(
     return await handler.get_device(device_id, profile)
 
 
-@router.put("/devices/{device_id}", response_model=ApiResponse[WearableDeviceDTO], dependencies=[Depends(require_patient)])
+@router.patch("/devices/{device_id}", response_model=ApiResponse[WearableDeviceDTO], dependencies=[Depends(require_patient)])
 async def update_device(
     device_id: UUID,
     req: WearableDeviceUpdateDTO,

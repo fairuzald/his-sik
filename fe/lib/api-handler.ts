@@ -50,7 +50,7 @@ export async function safeApiCall<TResponse extends ApiResponse>(
     // Handle error returned in successful HTTP response (e.g. 200 OK but success: false)
     if (response.data && !response.data.success) {
       const msg =
-        response.data.message || options?.errorMessage || "Operation failed";
+        response.error.message || options?.errorMessage || "Operation failed";
       toast.error(msg);
       if (options?.onError) {
         options.onError(new Error(msg));
@@ -74,11 +74,16 @@ export async function safeApiCall<TResponse extends ApiResponse>(
     }
 
     // Handle Axios Error Structure
-    if (error?.response?.data?.message) {
-      msg = error.response.data.message;
-    } else if (error?.body?.message) {
-      // Hey-api sometimes puts body here
-      msg = error.body.message;
+    if (error?.message) {
+      msg = error.message;
+    }
+
+    if (error?.errors.length > 0) {
+      msg = error.errors
+        .map(
+          (e: { field: string; message: string }) => e.field + ": " + e.message
+        )
+        .join(", and ");
     }
 
     toast.error(msg);

@@ -1,47 +1,48 @@
 "use client";
 
-import { UserForm, UserFormValues } from "@/components/forms/UserForm";
+import {
+  SimplePatientFormValues,
+  MultiStepPatientRegistrationForm,
+} from "@/components/forms/MultiStepPatientRegistrationForm";
 import AuthLayout from "@/components/layouts/AuthLayout";
+import { safeApiCall } from "@/lib/api-handler";
 import { registerApiAuthRegisterPost } from "@/sdk/output/sdk.gen";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { toast } from "sonner";
 
 export default function RegisterPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
-  const onSubmit = async (data: UserFormValues) => {
+  const onSubmit = async (data: SimplePatientFormValues) => {
     setIsLoading(true);
-    try {
-      const response = await registerApiAuthRegisterPost({
+
+    const result = await safeApiCall(
+      registerApiAuthRegisterPost({
         body: {
           full_name: data.full_name,
           username: data.username,
-          password: data.password!, // Validated by schema to be present in create mode
+          password: data.password,
           email: data.email || null,
           phone_number: data.phone_number || null,
+          nik: data.nik,
+          date_of_birth: data.date_of_birth,
+          gender: data.gender,
+          // Optional fields can be updated later via profile
+          bpjs_number: null,
+          blood_type: null,
+          address: null,
+          emergency_contact_name: null,
+          emergency_contact_phone: null,
         },
-      });
+      }),
+      { successMessage: "Account created successfully! Please login." }
+    );
 
-      if (response.data?.success) {
-        toast.success("Account created successfully! Please login.");
-        router.push("/login");
-      } else {
-        toast.error(response.data?.message || "Failed to create account.");
-      }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      // Check if it's an API error
-      if (error?.response?.data?.message) {
-        toast.error(error.response.data.message);
-      } else {
-        toast.error("An unexpected error occurred. Please try again.");
-        console.error("Registration error:", error);
-      }
-    } finally {
-      setIsLoading(false);
+    if (result) {
+      router.push("/login");
     }
+    setIsLoading(false);
   };
 
   return (
@@ -52,7 +53,7 @@ export default function RegisterPage() {
       footerLink="/login"
       footerLinkText="Sign In"
     >
-      <UserForm
+      <MultiStepPatientRegistrationForm
         onSubmit={onSubmit}
         isLoading={isLoading}
         submitText="Create Account"

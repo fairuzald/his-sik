@@ -2,7 +2,7 @@
 from typing import List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, Form, UploadFile
+from fastapi import APIRouter, Depends
 
 from backend.api.handlers.lab_handler import LabHandler
 from backend.api.middleware.auth import (
@@ -64,7 +64,7 @@ async def get_lab_test(
     return await handler.get_lab_test(test_id)
 
 
-@router.put("/tests/{test_id}", response_model=ApiResponse[LabTestDTO], dependencies=[Depends(require_lab_access)])
+@router.patch("/tests/{test_id}", response_model=ApiResponse[LabTestDTO], dependencies=[Depends(require_lab_access)])
 async def update_lab_test(
     test_id: UUID,
     req: LabTestUpdateDTO,
@@ -124,28 +124,11 @@ async def get_lab_order(
 @router.patch("/orders/{order_id}", response_model=ApiResponse[LabOrderDTO], dependencies=[Depends(require_lab_access)])
 async def update_lab_order(
     order_id: UUID,
-    order_status: str = Form(...),
-    result_value: Optional[str] = Form(None),
-    result_unit: Optional[str] = Form(None),
-    interpretation: Optional[str] = Form(None),
-    file: Optional[UploadFile] = File(None),
+    req: LabOrderUpdateStatusDTO,
     profile: AuthenticatedProfile = Depends(get_current_profile),
     handler: LabHandler = Depends()
 ):
     """
-    Update lab order status and optionally upload result attachment.
-    Accepts multipart form data with optional file upload.
+    Update lab order status and optionally result.
     """
-    from backend.module.lab.entity.lab_dto import LabResultBase
-
-    # Build result if any result fields provided
-    result = None
-    if any([result_value, result_unit, interpretation]):
-        result = LabResultBase(
-            result_value=result_value,
-            result_unit=result_unit,
-            interpretation=interpretation
-        )
-
-    req = LabOrderUpdateStatusDTO(order_status=order_status, result=result)
-    return await handler.update_lab_order(order_id, req, profile, file)
+    return await handler.update_lab_order(order_id, req, profile)

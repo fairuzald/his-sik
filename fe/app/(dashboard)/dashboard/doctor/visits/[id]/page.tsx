@@ -18,8 +18,8 @@ import {
   listLabTestsApiLabTestsGet,
   listMedicalRecordsApiMedicalRecordsGet,
   listPrescriptionsApiPrescriptionsGet,
-  updateMedicalRecordApiMedicalRecordsRecordIdPut,
-  updateVisitApiVisitsVisitIdPut,
+  updateMedicalRecordApiMedicalRecordsRecordIdPatch,
+  updateVisitApiVisitsVisitIdPatch,
 } from "@/sdk/output/sdk.gen";
 import {
   LabOrderDto,
@@ -131,7 +131,7 @@ export default function DoctorVisitDetailPage() {
       if (medicalRecord) {
         // Update
         await safeApiCall(
-          updateMedicalRecordApiMedicalRecordsRecordIdPut({
+          updateMedicalRecordApiMedicalRecordsRecordIdPatch({
             path: { record_id: medicalRecord.id },
             body: {
               anamnesis,
@@ -169,7 +169,7 @@ export default function DoctorVisitDetailPage() {
     if (!visit) return;
     if (confirm("Are you sure you want to finish this consultation?")) {
       await safeApiCall(
-        updateVisitApiVisitsVisitIdPut({
+        updateVisitApiVisitsVisitIdPatch({
           path: { visit_id: visit.id },
           body: {
             visit_status: VisitStatusEnum.COMPLETED,

@@ -21,8 +21,8 @@ export default function NewVisitPage() {
     const result = await safeApiCall(
       createVisitApiVisitsPost({
         body: {
-          patient_id: data.patient_id,
-          doctor_id: data.doctor_id,
+          patient_user_id: data.patient_id, // Using user_id now
+          doctor_user_id: data.doctor_id, // Using user_id now
           clinic_id: data.clinic_id,
           visit_datetime: data.visit_datetime, // Already ISO from form
           visit_type: data.visit_type,

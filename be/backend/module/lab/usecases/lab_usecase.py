@@ -77,7 +77,11 @@ class LabUseCase:
 
     # --- Lab Order Management ---
 
-    async def create_lab_order(self, req: LabOrderCreateDTO, user_id: UUID) -> LabOrder:
+    async def create_lab_order(
+        self,
+        req: LabOrderCreateDTO,
+        user_id: UUID
+    ) -> LabOrder:
 
         visit = await self.visit_repository.get_by_id(req.visit_id)
         if not visit:
@@ -97,6 +101,7 @@ class LabUseCase:
             notes=req.notes,
             order_status=OrderStatusEnum.PENDING.value
         )
+
         return await self.order_repository.create(lab_order)
 
     async def list_lab_orders(
@@ -138,13 +143,10 @@ class LabUseCase:
         self,
         order_id: UUID,
         req: LabOrderUpdateStatusDTO,
-        user_id: UUID,
-        attachment_url: Optional[str] = None,
-        attachment_type: Optional[str] = None
+        user_id: UUID
     ) -> LabOrder:
         """
         Update lab order status and optionally attach a file result.
-        Combines the functionality of updating status and uploading attachments.
         """
         order = await self.order_repository.get_by_id(order_id)
         if not order:
@@ -155,12 +157,6 @@ class LabUseCase:
 
         # Handle result data from request
         result_data = req.result.model_dump(exclude_unset=True) if req.result else {}
-
-        # Override attachment from file upload if provided
-        if attachment_url:
-            result_data["attachment_url"] = attachment_url
-        if attachment_type:
-            result_data["attachment_type"] = attachment_type
 
         # Create or update result if we have any result data
         if result_data:

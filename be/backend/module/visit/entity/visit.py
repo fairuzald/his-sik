@@ -2,11 +2,12 @@
 import uuid
 from datetime import datetime
 
-from backend.infrastructure.database.connection import Base
-from backend.module.common.enums import VisitStatusEnum, VisitTypeEnum
 from sqlalchemy import Column, DateTime, Enum, ForeignKey, Integer, Text
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import relationship
+
+from backend.infrastructure.database.connection import Base
+from backend.module.common.enums import VisitStatusEnum, VisitTypeEnum
 
 
 class Visit(Base):
@@ -14,9 +15,9 @@ class Visit(Base):
 
     id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     patient_id = Column(PG_UUID(as_uuid=True), ForeignKey("patients.id", ondelete="CASCADE"), nullable=False)
-    doctor_id = Column(PG_UUID(as_uuid=True), ForeignKey("doctors.id"), nullable=False)
-    registration_staff_id = Column(PG_UUID(as_uuid=True), ForeignKey("staff.id"), nullable=False)
-    clinic_id = Column(PG_UUID(as_uuid=True), ForeignKey("clinic.id"), nullable=False)
+    doctor_id = Column(PG_UUID(as_uuid=True), ForeignKey("doctors.id", ondelete="SET NULL"), nullable=True)
+    registration_staff_id = Column(PG_UUID(as_uuid=True), ForeignKey("staff.id", ondelete="SET NULL"), nullable=True)
+    clinic_id = Column(PG_UUID(as_uuid=True), ForeignKey("clinic.id", ondelete="SET NULL"), nullable=True)
 
     queue_number = Column(Integer, nullable=True) # Serial in DB, but integer here. Maybe need to handle generation if not auto-incrementing in older postgres with simple insert
     visit_datetime = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)

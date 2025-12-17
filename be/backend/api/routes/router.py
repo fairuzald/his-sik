@@ -1,25 +1,16 @@
+from backend.api.routes import (auth_route, clinic_route, health_route,
+                                invoice_route, lab_route, medical_record_route,
+                                medicine_route, prescription_route,
+                                profile_route, referral_route,
+                                user_creation_route, user_route, visit_route,
+                                wearable_route)
 from fastapi import APIRouter
-
-from backend.api.routes import (
-    auth_route,
-    clinic_route,
-    health_route,
-    invoice_route,
-    lab_route,
-    medical_record_route,
-    medicine_route,
-    prescription_route,
-    profile_route,
-    referral_route,
-    user_route,
-    visit_route,
-    wearable_route,
-)
 
 api_router = APIRouter()
 
 api_router.include_router(auth_route.router) # /auth
-api_router.include_router(user_route.router) # /users
+api_router.include_router(user_route.router) # /users (legacy)
+api_router.include_router(user_creation_route.router) # /users/* (new)
 api_router.include_router(clinic_route.router) # /clinics (Admin)
 api_router.include_router(profile_route.router) # /profile
 

@@ -11,8 +11,8 @@ class ClinicBase(BaseModel):
 class ClinicCreateDTO(ClinicBase):
     pass
 
-class ClinicUpdateDTO(ClinicBase):
-    pass
+class ClinicUpdateDTO(BaseModel):
+    name: str | None = None
 
 class ClinicDTO(ClinicBase):
     id: UUID

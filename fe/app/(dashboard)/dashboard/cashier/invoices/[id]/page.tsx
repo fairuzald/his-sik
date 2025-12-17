@@ -23,7 +23,7 @@ import {
 import { safeApiCall } from "@/lib/api-handler";
 import {
   getInvoiceApiInvoicesInvoiceIdGet,
-  updateInvoiceApiInvoicesInvoiceIdPut,
+  updateInvoiceApiInvoicesInvoiceIdPatch,
 } from "@/sdk/output/sdk.gen";
 import { InvoiceDto } from "@/sdk/output/types.gen";
 import { ArrowLeft, CreditCard, Loader2, Printer } from "lucide-react";
@@ -70,7 +70,7 @@ export default function CashierInvoiceDetailPage() {
     const status = isPaid ? "paid" : "partial"; // Assuming 'partial' exists or 'unpaid'
 
     const result = await safeApiCall(
-      updateInvoiceApiInvoicesInvoiceIdPut({
+      updateInvoiceApiInvoicesInvoiceIdPatch({
         path: { invoice_id: invoiceId },
         body: {
           payment_method: paymentMethod,

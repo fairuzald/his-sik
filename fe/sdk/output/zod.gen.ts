@@ -656,63 +656,93 @@ export const zBodyRefreshTokenApiAuthRefreshPost = z.object({
     refresh_token: z.string()
 });
 
-export const zBodyUpdateLabOrderApiLabOrdersOrderIdPatch = z.object({
-    order_status: z.string(),
-    result_value: z.union([
-        z.string(),
-        z.null()
-    ]).optional(),
-    result_unit: z.union([
-        z.string(),
-        z.null()
-    ]).optional(),
-    interpretation: z.union([
-        z.string(),
-        z.null()
-    ]).optional(),
-    file: z.union([
-        z.string(),
-        z.null()
-    ]).optional()
-});
-
-export const zBodyUpdateReferralApiReferralsReferralIdPut = z.object({
-    referred_to_facility: z.union([
-        z.string(),
-        z.null()
-    ]).optional(),
-    specialty: z.union([
-        z.string(),
-        z.null()
-    ]).optional(),
-    reason: z.union([
-        z.string(),
-        z.null()
-    ]).optional(),
-    diagnosis: z.union([
-        z.string(),
-        z.null()
-    ]).optional(),
-    notes: z.union([
-        z.string(),
-        z.null()
-    ]).optional(),
-    referral_status: z.union([
-        z.string(),
-        z.null()
-    ]).optional(),
-    file: z.union([
-        z.string(),
-        z.null()
-    ]).optional()
-});
-
 export const zClinicCreateDto = z.object({
     name: z.string()
 });
 
 export const zClinicUpdateDto = z.object({
-    name: z.string()
+    name: z.union([
+        z.string(),
+        z.null()
+    ]).optional()
+});
+
+export const zCreateDoctorDto = z.object({
+    username: z.string().min(3).max(50),
+    password: z.string().min(6),
+    full_name: z.string().min(1).max(150),
+    email: z.union([
+        z.string().email(),
+        z.null()
+    ]).optional(),
+    phone_number: z.union([
+        z.string(),
+        z.null()
+    ]).optional(),
+    specialty: z.union([
+        z.string().max(100),
+        z.null()
+    ]).optional(),
+    sip_number: z.union([
+        z.string().max(50),
+        z.null()
+    ]).optional(),
+    str_number: z.union([
+        z.string().max(50).regex(/^[0-9]{16}$/),
+        z.null()
+    ]).optional()
+});
+
+export const zCreatePatientDto = z.object({
+    username: z.string().min(3).max(50),
+    password: z.string().min(6),
+    full_name: z.string().min(1).max(150),
+    email: z.union([
+        z.string().email(),
+        z.null()
+    ]).optional(),
+    phone_number: z.union([
+        z.string(),
+        z.null()
+    ]).optional(),
+    nik: z.string().length(16),
+    date_of_birth: z.string().date(),
+    gender: zGenderEnum,
+    bpjs_number: z.union([
+        z.string().max(20),
+        z.null()
+    ]).optional(),
+    blood_type: z.union([
+        zBloodTypeEnum,
+        z.null()
+    ]).optional(),
+    address: z.union([
+        z.string(),
+        z.null()
+    ]).optional(),
+    emergency_contact_name: z.union([
+        z.string().max(100),
+        z.null()
+    ]).optional(),
+    emergency_contact_phone: z.union([
+        z.string().max(20),
+        z.null()
+    ]).optional()
+});
+
+export const zCreateStaffDto = z.object({
+    username: z.string().min(3).max(50),
+    password: z.string().min(6),
+    full_name: z.string().min(1).max(150),
+    email: z.union([
+        z.string().email(),
+        z.null()
+    ]).optional(),
+    phone_number: z.union([
+        z.string(),
+        z.null()
+    ]).optional(),
+    department: zStaffDepartmentEnum
 });
 
 export const zCreateUserDto = z.object({
@@ -803,6 +833,29 @@ export const zLabOrderCreateDto = z.object({
         z.null()
     ]).optional(),
     visit_id: z.string().uuid()
+});
+
+export const zLabResultBase = z.object({
+    result_value: z.union([
+        z.string(),
+        z.null()
+    ]).optional(),
+    result_unit: z.union([
+        z.string(),
+        z.null()
+    ]).optional(),
+    interpretation: z.union([
+        z.string(),
+        z.null()
+    ]).optional()
+});
+
+export const zLabOrderUpdateStatusDto = z.object({
+    order_status: z.string(),
+    result: z.union([
+        zLabResultBase,
+        z.null()
+    ]).optional()
 });
 
 export const zLabTestCreateDto = z.object({
@@ -1222,6 +1275,33 @@ export const zReferralCreateDto = z.object({
     visit_id: z.string().uuid()
 });
 
+export const zReferralUpdateDto = z.object({
+    referred_to_facility: z.union([
+        z.string(),
+        z.null()
+    ]).optional(),
+    specialty: z.union([
+        z.string(),
+        z.null()
+    ]).optional(),
+    reason: z.union([
+        z.string(),
+        z.null()
+    ]).optional(),
+    diagnosis: z.union([
+        z.string(),
+        z.null()
+    ]).optional(),
+    notes: z.union([
+        z.string(),
+        z.null()
+    ]).optional(),
+    referral_status: z.union([
+        z.string(),
+        z.null()
+    ]).optional()
+});
+
 export const zRegisterDto = z.object({
     username: z.string().min(3).max(50),
     password: z.string().min(6),
@@ -1232,6 +1312,29 @@ export const zRegisterDto = z.object({
     ]).optional(),
     phone_number: z.union([
         z.string(),
+        z.null()
+    ]).optional(),
+    nik: z.string().length(16),
+    date_of_birth: z.string().date(),
+    gender: zGenderEnum,
+    bpjs_number: z.union([
+        z.string().max(20),
+        z.null()
+    ]).optional(),
+    blood_type: z.union([
+        zBloodTypeEnum,
+        z.null()
+    ]).optional(),
+    address: z.union([
+        z.string(),
+        z.null()
+    ]).optional(),
+    emergency_contact_name: z.union([
+        z.string().max(100),
+        z.null()
+    ]).optional(),
+    emergency_contact_phone: z.union([
+        z.string().max(20),
         z.null()
     ]).optional()
 });
@@ -1344,6 +1447,25 @@ export const zUpdateStaffProfileDto = z.object({
     ]).optional()
 });
 
+export const zUpdateUserAdminDto = z.object({
+    full_name: z.union([
+        z.string(),
+        z.null()
+    ]).optional(),
+    email: z.union([
+        z.string().email(),
+        z.null()
+    ]).optional(),
+    phone_number: z.union([
+        z.string(),
+        z.null()
+    ]).optional(),
+    is_active: z.union([
+        z.boolean(),
+        z.null()
+    ]).optional()
+});
+
 export const zVisitCreateDto = z.object({
     visit_type: zVisitTypeEnum.optional(),
     chief_complaint: z.union([
@@ -1351,8 +1473,8 @@ export const zVisitCreateDto = z.object({
         z.null()
     ]).optional(),
     visit_datetime: z.string().datetime().optional(),
-    patient_id: z.string().uuid(),
-    doctor_id: z.string().uuid(),
+    patient_user_id: z.string().uuid(),
+    doctor_user_id: z.string().uuid(),
     clinic_id: z.string().uuid()
 });
 
@@ -1451,6 +1573,14 @@ export const zListUsersApiUsersGetResponse = zPaginatedApiResponseListUserDao;
 
 export const zCreateUserApiUsersPostResponse = zApiResponseUserDao;
 
+export const zUpdateUserApiUsersUserIdPatchResponse = zApiResponseUserDao;
+
+export const zCreatePatientUserApiUsersPatientsPostResponse = zApiResponseUserDao;
+
+export const zCreateDoctorUserApiUsersDoctorsPostResponse = zApiResponseUserDao;
+
+export const zCreateStaffUserApiUsersStaffPostResponse = zApiResponseUserDao;
+
 export const zListClinicsApiClinicsGetResponse = zPaginatedApiResponseListClinicDto;
 
 export const zCreateClinicApiClinicsPostResponse = zApiResponseClinicDto;
@@ -1459,17 +1589,17 @@ export const zDeleteClinicApiClinicsClinicIdDeleteResponse = zApiResponse;
 
 export const zGetClinicApiClinicsClinicIdGetResponse = zApiResponseClinicDto;
 
-export const zUpdateClinicApiClinicsClinicIdPutResponse = zApiResponseClinicDto;
+export const zUpdateClinicApiClinicsClinicIdPatchResponse = zApiResponseClinicDto;
 
 export const zGetMyProfileApiProfileMeGetResponse = zApiResponseUserProfileDao;
 
-export const zUpdateAdminProfileApiProfileAdminPutResponse = zApiResponse;
+export const zUpdateAdminProfileApiProfileAdminPatchResponse = zApiResponse;
 
-export const zUpdateStaffProfileApiProfileStaffPutResponse = zApiResponseUserProfileDao;
+export const zUpdateStaffProfileApiProfileStaffPatchResponse = zApiResponseUserProfileDao;
 
-export const zUpdateDoctorProfileApiProfileDoctorPutResponse = zApiResponseUserProfileDao;
+export const zUpdateDoctorProfileApiProfileDoctorPatchResponse = zApiResponseUserProfileDao;
 
-export const zUpdatePatientProfileApiProfilePatientPutResponse = zApiResponseUserProfileDao;
+export const zUpdatePatientProfileApiProfilePatientPatchResponse = zApiResponseUserProfileDao;
 
 export const zListVisitsApiVisitsGetResponse = zPaginatedApiResponseListVisitDto;
 
@@ -1479,7 +1609,7 @@ export const zDeleteVisitApiVisitsVisitIdDeleteResponse = zApiResponse;
 
 export const zGetVisitApiVisitsVisitIdGetResponse = zApiResponseVisitDto;
 
-export const zUpdateVisitApiVisitsVisitIdPutResponse = zApiResponseVisitDto;
+export const zUpdateVisitApiVisitsVisitIdPatchResponse = zApiResponseVisitDto;
 
 export const zListMedicalRecordsApiMedicalRecordsGetResponse = zPaginatedApiResponseListMedicalRecordDto;
 
@@ -1489,7 +1619,7 @@ export const zDeleteMedicalRecordApiMedicalRecordsRecordIdDeleteResponse = zApiR
 
 export const zGetMedicalRecordApiMedicalRecordsRecordIdGetResponse = zApiResponseMedicalRecordDto;
 
-export const zUpdateMedicalRecordApiMedicalRecordsRecordIdPutResponse = zApiResponseMedicalRecordDto;
+export const zUpdateMedicalRecordApiMedicalRecordsRecordIdPatchResponse = zApiResponseMedicalRecordDto;
 
 export const zListMedicinesApiMedicinesGetResponse = zPaginatedApiResponseListMedicineDto;
 
@@ -1499,7 +1629,7 @@ export const zDeleteMedicineApiMedicinesMedicineIdDeleteResponse = zApiResponse;
 
 export const zGetMedicineApiMedicinesMedicineIdGetResponse = zApiResponseMedicineDto;
 
-export const zUpdateMedicineApiMedicinesMedicineIdPutResponse = zApiResponseMedicineDto;
+export const zUpdateMedicineApiMedicinesMedicineIdPatchResponse = zApiResponseMedicineDto;
 
 export const zListPrescriptionsApiPrescriptionsGetResponse = zPaginatedApiResponseListPrescriptionDto;
 
@@ -1507,7 +1637,7 @@ export const zCreatePrescriptionApiPrescriptionsPostResponse = zApiResponsePresc
 
 export const zGetPrescriptionApiPrescriptionsPrescriptionIdGetResponse = zApiResponsePrescriptionDto;
 
-export const zUpdatePrescriptionApiPrescriptionsPrescriptionIdPutResponse = zApiResponsePrescriptionDto;
+export const zUpdatePrescriptionApiPrescriptionsPrescriptionIdPatchResponse = zApiResponsePrescriptionDto;
 
 export const zUpdatePrescriptionStatusApiPrescriptionsPrescriptionIdStatusPatchResponse = zApiResponsePrescriptionDto;
 
@@ -1519,7 +1649,7 @@ export const zDeleteLabTestApiLabTestsTestIdDeleteResponse = zApiResponse;
 
 export const zGetLabTestApiLabTestsTestIdGetResponse = zApiResponseLabTestDto;
 
-export const zUpdateLabTestApiLabTestsTestIdPutResponse = zApiResponseLabTestDto;
+export const zUpdateLabTestApiLabTestsTestIdPatchResponse = zApiResponseLabTestDto;
 
 export const zListLabOrdersApiLabOrdersGetResponse = zPaginatedApiResponseListLabOrderDto;
 
@@ -1537,7 +1667,7 @@ export const zDeleteReferralApiReferralsReferralIdDeleteResponse = zApiResponse;
 
 export const zGetReferralApiReferralsReferralIdGetResponse = zApiResponseReferralDto;
 
-export const zUpdateReferralApiReferralsReferralIdPutResponse = zApiResponseReferralDto;
+export const zUpdateReferralApiReferralsReferralIdPatchResponse = zApiResponseReferralDto;
 
 export const zListInvoicesApiInvoicesGetResponse = zPaginatedApiResponseListInvoiceDto;
 
@@ -1547,7 +1677,7 @@ export const zDeleteInvoiceApiInvoicesInvoiceIdDeleteResponse = zApiResponse;
 
 export const zGetInvoiceApiInvoicesInvoiceIdGetResponse = zApiResponseInvoiceDto;
 
-export const zUpdateInvoiceApiInvoicesInvoiceIdPutResponse = zApiResponseInvoiceDto;
+export const zUpdateInvoiceApiInvoicesInvoiceIdPatchResponse = zApiResponseInvoiceDto;
 
 export const zListDevicesApiWearablesDevicesGetResponse = zPaginatedApiResponseListWearableDeviceDto;
 
@@ -1557,7 +1687,7 @@ export const zDeleteDeviceApiWearablesDevicesDeviceIdDeleteResponse = zApiRespon
 
 export const zGetDeviceApiWearablesDevicesDeviceIdGetResponse = zApiResponseWearableDeviceDto;
 
-export const zUpdateDeviceApiWearablesDevicesDeviceIdPutResponse = zApiResponseWearableDeviceDto;
+export const zUpdateDeviceApiWearablesDevicesDeviceIdPatchResponse = zApiResponseWearableDeviceDto;
 
 export const zListMeasurementsApiWearablesDevicesDeviceIdMeasurementsGetResponse = zPaginatedApiResponseListWearableMeasurementDto;
 

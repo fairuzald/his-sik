@@ -38,7 +38,7 @@ async def get_my_profile(
     return await handler.get_profile(user)
 
 
-@router.put("/admin", response_model=ApiResponse, dependencies=[Depends(require_admin)])
+@router.patch("/admin", response_model=ApiResponse, dependencies=[Depends(require_admin)])
 async def update_admin_profile(
     req: UpdateAdminProfileDTO,
     user: User = Depends(get_current_user),
@@ -48,7 +48,7 @@ async def update_admin_profile(
     return await handler.update_profile(user, req)
 
 
-@router.put("/staff", response_model=ApiResponse[UserProfileDAO], dependencies=[Depends(require_staff)])
+@router.patch("/staff", response_model=ApiResponse[UserProfileDAO], dependencies=[Depends(require_staff)])
 async def update_staff_profile(
     req: UpdateStaffProfileDTO,
     user: User = Depends(get_current_user),
@@ -58,7 +58,7 @@ async def update_staff_profile(
     return await handler.update_profile(req, user)
 
 
-@router.put("/doctor", response_model=ApiResponse[UserProfileDAO], dependencies=[Depends(require_doctor)])
+@router.patch("/doctor", response_model=ApiResponse[UserProfileDAO], dependencies=[Depends(require_doctor)])
 async def update_doctor_profile(
     req: UpdateDoctorProfileDTO,
     user: User = Depends(get_current_user),
@@ -68,7 +68,7 @@ async def update_doctor_profile(
     return await handler.update_profile(req, user)
 
 
-@router.put("/patient", response_model=ApiResponse[UserProfileDAO], dependencies=[Depends(require_patient)])
+@router.patch("/patient", response_model=ApiResponse[UserProfileDAO], dependencies=[Depends(require_patient)])
 async def update_patient_profile(
     req: UpdatePatientProfileDTO,
     user: User = Depends(get_current_user),

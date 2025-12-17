@@ -52,7 +52,7 @@ async def get_clinic(
     return await handler.get_clinic(clinic_id)
 
 
-@router.put("/{clinic_id}", response_model=ApiResponse[ClinicDTO], dependencies=[Depends(require_admin)])
+@router.patch("/{clinic_id}", response_model=ApiResponse[ClinicDTO], dependencies=[Depends(require_admin)])
 async def update_clinic(
     clinic_id: UUID,
     req: ClinicUpdateDTO,

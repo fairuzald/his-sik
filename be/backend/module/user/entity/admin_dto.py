@@ -10,3 +10,10 @@ class CreateUserDTO(BaseRequestSchema):
     email: EmailStr | None = None
     phone_number: str | None = None
     role: str = Field(..., description="Role: admin, doctor, staff, or patient")
+
+
+class UpdateUserAdminDTO(BaseRequestSchema):
+    full_name: str | None = None
+    email: EmailStr | None = None
+    phone_number: str | None = None
+    is_active: bool | None = None

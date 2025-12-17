@@ -2,7 +2,7 @@
 from typing import List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, Form, UploadFile
+from fastapi import APIRouter, Depends
 
 from backend.api.handlers.referral_handler import ReferralHandler
 from backend.api.middleware.auth import (
@@ -31,7 +31,9 @@ async def create_referral(
     profile: AuthenticatedProfile = Depends(get_current_profile),
     handler: ReferralHandler = Depends()
 ):
-    """Create a new referral. Doctor only."""
+    """
+    Create a new referral. Doctor only.
+    """
     return await handler.create_referral(req, profile)
 
 
@@ -57,32 +59,17 @@ async def get_referral(
     return await handler.get_referral(referral_id, profile)
 
 
-@router.put("/{referral_id}", response_model=ApiResponse[ReferralDTO], dependencies=[Depends(require_doctor)])
+@router.patch("/{referral_id}", response_model=ApiResponse[ReferralDTO], dependencies=[Depends(require_doctor)])
 async def update_referral(
     referral_id: UUID,
-    referred_to_facility: Optional[str] = Form(None),
-    specialty: Optional[str] = Form(None),
-    reason: Optional[str] = Form(None),
-    diagnosis: Optional[str] = Form(None),
-    notes: Optional[str] = Form(None),
-    referral_status: Optional[str] = Form(None),
-    file: Optional[UploadFile] = File(None),
+    req: ReferralUpdateDTO,
     profile: AuthenticatedProfile = Depends(get_current_profile),
     handler: ReferralHandler = Depends()
 ):
     """
-    Update a referral and optionally upload attachment.
-    Accepts multipart form data with optional file upload. Doctor only.
+    Update a referral. Doctor only.
     """
-    req = ReferralUpdateDTO(
-        referred_to_facility=referred_to_facility,
-        specialty=specialty,
-        reason=reason,
-        diagnosis=diagnosis,
-        notes=notes,
-        referral_status=referral_status
-    )
-    return await handler.update_referral(referral_id, req, profile, file)
+    return await handler.update_referral(referral_id, req, profile)
 
 
 @router.delete("/{referral_id}", response_model=ApiResponse, dependencies=[Depends(require_admin_or_doctor)])

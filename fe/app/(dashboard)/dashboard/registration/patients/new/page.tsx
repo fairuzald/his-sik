@@ -1,32 +1,42 @@
 "use client";
 
 import { H2, P } from "@/components/elements/typography";
-import { UserForm } from "@/components/forms/UserForm"; // Use generic UserForm
+import {
+  PatientRegistrationForm,
+  PatientFormValues,
+} from "@/components/forms/PatientRegistrationForm";
 import { Button } from "@/components/ui/button";
 import { safeApiCall } from "@/lib/api-handler";
-import { createUserApiUsersPost } from "@/sdk/output/sdk.gen";
-import { CreateUserDto } from "@/sdk/output/types.gen"; // Use CreateUserDto
+import { createPatientUserApiUsersPatientsPost } from "@/sdk/output/sdk.gen";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 export default function NewPatientPage() {
   const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = async (data: any) => {
-    // Map form data to CreateUserDto. UserForm produces CreateUserDto-like structure.
-    const payload: CreateUserDto = {
-      username: data.username,
-      password: data.password,
-      full_name: data.full_name,
-      role: "patient", // Force role
-      email: data.email || null,
-      phone_number: data.phone_number || null,
-    };
+  const handleSubmit = async (data: PatientFormValues) => {
+    setIsLoading(true);
 
     const result = await safeApiCall(
-      createUserApiUsersPost({
-        body: payload,
+      createPatientUserApiUsersPatientsPost({
+        body: {
+          username: data.username,
+          password: data.password,
+          full_name: data.full_name,
+          email: data.email || null,
+          phone_number: data.phone_number || null,
+          nik: data.nik,
+          date_of_birth: data.date_of_birth,
+          gender: data.gender,
+          bpjs_number: data.bpjs_number || null,
+          blood_type: data.blood_type || null,
+          address: data.address || null,
+          emergency_contact_name: data.emergency_contact_name || null,
+          emergency_contact_phone: data.emergency_contact_phone || null,
+        },
       }),
       { successMessage: "Patient account created successfully" }
     );
@@ -34,6 +44,8 @@ export default function NewPatientPage() {
     if (result) {
       router.push("/dashboard/registration/patients");
     }
+
+    setIsLoading(false);
   };
 
   return (
@@ -49,19 +61,18 @@ export default function NewPatientPage() {
             New Patient
           </H2>
           <P className="text-muted-foreground text-sm">
-            Register a new patient account in the system.
+            Register a new patient account in the system with full patient
+            details.
           </P>
         </div>
       </div>
 
-      <div className="w-full">
-        {/* Pass initial data to pre-select role if supported, or handled in submit */}
-        <UserForm
-          defaultValues={{ role: "patient" }}
+      <div className="w-full max-w-3xl">
+        <PatientRegistrationForm
           onSubmit={handleSubmit}
-          isAdmin={false}
+          isLoading={isLoading}
+          submitText="Create Patient Account"
         />
-        {/* Note: UserForm 'isAdmin' prop controls role field visibility? checking UserForm next. */}
       </div>
     </div>
   );

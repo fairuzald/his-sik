@@ -14,7 +14,7 @@ class Invoice(Base):
 
     id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     visit_id = Column(PG_UUID(as_uuid=True), ForeignKey("visits.id", ondelete="CASCADE"), unique=True, nullable=False)
-    cashier_id = Column(PG_UUID(as_uuid=True), ForeignKey("staff.id"), nullable=False)
+    cashier_id = Column(PG_UUID(as_uuid=True), ForeignKey("staff.id", ondelete="SET NULL"), nullable=True)
     total_amount = Column(Numeric(10, 2), default=0, nullable=False)
     amount_paid = Column(Numeric(10, 2), default=0, nullable=False)
     payment_status = Column(String, default=PaymentStatusEnum.UNPAID.value, nullable=False)
