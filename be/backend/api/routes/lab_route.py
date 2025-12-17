@@ -104,11 +104,12 @@ async def list_lab_orders(
     page: int = 1,
     limit: int = 10,
     status: Optional[str] = None,
+    visit_id: Optional[UUID] = None,
     profile: AuthenticatedProfile = Depends(get_current_profile),
     handler: LabHandler = Depends()
 ):
     """List lab orders. Filtered by role (Doctor sees own, Staff sees all)."""
-    return await handler.list_lab_orders(profile, page, limit, status)
+    return await handler.list_lab_orders(profile, page, limit, status, visit_id)
 
 
 @router.get("/orders/{order_id}", response_model=ApiResponse[LabOrderDTO])

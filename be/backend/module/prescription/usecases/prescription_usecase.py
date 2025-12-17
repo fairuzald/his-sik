@@ -15,6 +15,9 @@ from backend.module.prescription.entity.prescription_dto import (
 from backend.module.prescription.repositories.prescription_repository import (
     PrescriptionRepository,
 )
+from backend.module.profile.repositories.profile_repository import (
+    ProfileRepository,
+)
 from backend.module.visit.repositories.visit_repository import VisitRepository
 from backend.pkg.core.exceptions import (
     AuthorizationException,
@@ -27,19 +30,23 @@ class PrescriptionUseCase:
     def __init__(
         self,
         repository: PrescriptionRepository,
-        visit_repository: VisitRepository
+        visit_repository: VisitRepository,
+        profile_repository: ProfileRepository
     ):
         self.repository = repository
         self.visit_repository = visit_repository
+        self.profile_repository = profile_repository
 
-    async def create_prescription(self, req: PrescriptionCreateDTO, doctor_id: UUID) -> Prescription:
+    async def create_prescription(self, req: PrescriptionCreateDTO, user_id: UUID) -> Prescription:
         """Create prescription. Authorization handled by middleware."""
         visit = await self.visit_repository.get_by_id(req.visit_id)
         if not visit:
             raise NotFoundException("Visit not found")
 
         # Ownership check: doctor must be assigned to this visit
-        if visit.doctor_id != doctor_id:
+        # Ownership check: doctor must be assigned to this visit
+        doctor = await self.profile_repository.get_doctor_by_user_id(user_id)
+        if not doctor or visit.doctor_id != doctor.id:
             raise AuthorizationException("You are not the doctor for this visit")
 
         # Check existing
@@ -49,7 +56,7 @@ class PrescriptionUseCase:
 
         prescription = Prescription(
             visit_id=req.visit_id,
-            doctor_id=doctor_id,
+            doctor_id=doctor.id, # Use doctor ID from profile
             notes=req.notes,
             prescription_status=PrescriptionStatusEnum.PENDING.value
         )
@@ -74,22 +81,28 @@ class PrescriptionUseCase:
             raise NotFoundException("Prescription not found")
 
         # Ownership checks
-        if role == RoleEnum.DOCTOR.value and prescription.doctor_id != user_id:
-            raise AuthorizationException("Not authorized to view this prescription")
-        elif role == RoleEnum.PATIENT.value and prescription.visit.patient_id != user_id:
-            raise AuthorizationException("Not authorized to view this prescription")
+        # Ownership checks
+        if role == RoleEnum.DOCTOR.value:
+            doctor = await self.profile_repository.get_doctor_by_user_id(user_id)
+            if not doctor or prescription.doctor_id != doctor.id:
+                 raise AuthorizationException("Not authorized to view this prescription")
+        elif role == RoleEnum.PATIENT.value:
+            patient = await self.profile_repository.get_patient_by_user_id(user_id)
+            if not patient or prescription.visit.patient_id != patient.id:
+                 raise AuthorizationException("Not authorized to view this prescription")
 
         return prescription
 
     async def update_prescription(
-        self, prescription_id: UUID, req: PrescriptionUpdateDTO, doctor_id: UUID
+        self, prescription_id: UUID, req: PrescriptionUpdateDTO, user_id: UUID
     ) -> Prescription:
         """Update prescription. Authorization handled by middleware, ownership check here."""
         prescription = await self.repository.get_by_id(prescription_id)
         if not prescription:
             raise NotFoundException("Prescription not found")
 
-        if prescription.doctor_id != doctor_id:
+        doctor = await self.profile_repository.get_doctor_by_user_id(user_id)
+        if not doctor or prescription.doctor_id != doctor.id:
             raise AuthorizationException("Not authorized to update this prescription")
 
         if prescription.prescription_status != PrescriptionStatusEnum.PENDING.value:
@@ -133,16 +146,21 @@ class PrescriptionUseCase:
         user_id: UUID,
         role: str,
         search: Optional[str] = None,
-        status: Optional[str] = None
+        status: Optional[str] = None,
+        visit_id: Optional[UUID] = None
     ) -> tuple[List[Prescription], int]:
         """List prescriptions with ownership filter."""
         doctor_id = None
         patient_id = None
 
         if role == RoleEnum.DOCTOR.value:
-            doctor_id = user_id
+            doctor = await self.profile_repository.get_doctor_by_user_id(user_id)
+            if doctor:
+                doctor_id = doctor.id
         elif role == RoleEnum.PATIENT.value:
-            patient_id = user_id
+            patient = await self.profile_repository.get_patient_by_user_id(user_id)
+            if patient:
+                patient_id = patient.id
         # Staff/Admin see all
 
         return await self.repository.list_prescriptions(
@@ -151,5 +169,6 @@ class PrescriptionUseCase:
             doctor_id=doctor_id,
             patient_id=patient_id,
             status=status,
-            search=search
+            search=search,
+            visit_id=visit_id
         )

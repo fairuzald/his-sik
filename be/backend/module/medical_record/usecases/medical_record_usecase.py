@@ -10,6 +10,9 @@ from backend.module.medical_record.entity.medical_record_dto import (
 from backend.module.medical_record.repositories.medical_record_repository import (
     MedicalRecordRepository,
 )
+from backend.module.profile.repositories.profile_repository import (
+    ProfileRepository,
+)
 from backend.module.visit.repositories.visit_repository import VisitRepository
 from backend.pkg.core.exceptions import (
     AuthorizationException,
@@ -19,18 +22,28 @@ from backend.pkg.core.exceptions import (
 
 
 class MedicalRecordUseCase:
-    def __init__(self, repository: MedicalRecordRepository, visit_repository: VisitRepository):
+    def __init__(
+        self,
+        repository: MedicalRecordRepository,
+        visit_repository: VisitRepository,
+        profile_repository: ProfileRepository
+    ):
         self.repository = repository
         self.visit_repository = visit_repository
+        self.profile_repository = profile_repository
 
-    async def create_medical_record(self, req: MedicalRecordCreateDTO, doctor_id: UUID) -> MedicalRecord:
+    async def create_medical_record(self, req: MedicalRecordCreateDTO, user_id: UUID) -> MedicalRecord:
         """Create medical record. Authorization handled by middleware."""
         visit = await self.visit_repository.get_by_id(req.visit_id)
         if not visit:
             raise NotFoundException(f"Visit with id {req.visit_id} not found")
 
         # Ownership check: doctor must be assigned to this visit
-        if visit.doctor_id != doctor_id:
+        doctor = await self.profile_repository.get_doctor_by_user_id(user_id)
+        if not doctor:
+             raise BusinessLogicException("Doctor profile not found")
+
+        if visit.doctor_id != doctor.id:
             raise AuthorizationException("You are not the assigned doctor for this visit")
 
         # Check if record already exists (1-to-1)
@@ -56,15 +69,19 @@ class MedicalRecordUseCase:
             raise NotFoundException("Medical record not found")
 
         # Ownership checks
-        if role == RoleEnum.DOCTOR.value and record.visit.doctor_id != user_id:
-            raise NotFoundException("Medical record not found")
-        elif role == RoleEnum.PATIENT.value and record.visit.patient_id != user_id:
-            raise NotFoundException("Medical record not found")
+        if role == RoleEnum.DOCTOR.value:
+            doctor = await self.profile_repository.get_doctor_by_user_id(user_id)
+            if not doctor or record.visit.doctor_id != doctor.id:
+                raise NotFoundException("Medical record not found")
+        elif role == RoleEnum.PATIENT.value:
+            patient = await self.profile_repository.get_patient_by_user_id(user_id)
+            if not patient or record.visit.patient_id != patient.id:
+                raise NotFoundException("Medical record not found")
 
         return record
 
     async def update_medical_record(
-        self, record_id: UUID, req: MedicalRecordUpdateDTO, doctor_id: UUID
+        self, record_id: UUID, req: MedicalRecordUpdateDTO, user_id: UUID
     ) -> MedicalRecord:
         """Update medical record. Authorization handled by middleware, ownership check here."""
         record = await self.repository.get_by_id(record_id)
@@ -72,7 +89,10 @@ class MedicalRecordUseCase:
             raise NotFoundException("Medical record not found")
 
         # Ownership check
-        if record.visit.doctor_id != doctor_id:
+        doctor = await self.profile_repository.get_doctor_by_user_id(user_id)
+        if not doctor:
+             raise AuthorizationException("Doctor profile not found")
+        if record.visit.doctor_id != doctor.id:
             raise AuthorizationException("You are not the assigned doctor for this visit")
 
         if req.anamnesis is not None:
@@ -90,14 +110,17 @@ class MedicalRecordUseCase:
 
         return await self.repository.update(record)
 
-    async def delete_medical_record(self, record_id: UUID, doctor_id: UUID) -> None:
+    async def delete_medical_record(self, record_id: UUID, user_id: UUID) -> None:
         """Delete medical record. Authorization handled by middleware, ownership check here."""
         record = await self.repository.get_by_id(record_id)
         if not record:
             raise NotFoundException("Medical record not found")
 
         # Ownership check
-        if record.visit.doctor_id != doctor_id:
+        doctor = await self.profile_repository.get_doctor_by_user_id(user_id)
+        if not doctor:
+             raise AuthorizationException("Doctor profile not found")
+        if record.visit.doctor_id != doctor.id:
             raise AuthorizationException("You are not the assigned doctor")
 
         await self.repository.delete(record)
@@ -117,9 +140,13 @@ class MedicalRecordUseCase:
         filter_doctor_id = doctor_id
 
         if role == RoleEnum.PATIENT.value:
-            filter_patient_id = user_id
+            patient = await self.profile_repository.get_patient_by_user_id(user_id)
+            if patient:
+                filter_patient_id = patient.id
         elif role == RoleEnum.DOCTOR.value and not patient_id:
-            filter_doctor_id = user_id
+            doctor = await self.profile_repository.get_doctor_by_user_id(user_id)
+            if doctor:
+                filter_doctor_id = doctor.id
         # Admin/Staff see all
 
         return await self.repository.list_medical_records(
