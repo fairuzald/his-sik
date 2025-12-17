@@ -17,10 +17,29 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     );
   }
 
+  // Determine the navigation role for sidebar
+  // For staff users, map department to navigation key
+  let navRole = user?.role || "";
+  if (user?.role === "staff" && user.details) {
+    const staffDetails = user.details as { department?: string };
+    const department = staffDetails?.department;
+
+    // Map department to navigation key
+    if (department === "Laboratory") {
+      navRole = "lab";
+    } else if (department === "Pharmacy") {
+      navRole = "pharmacy";
+    } else if (department === "Registration") {
+      navRole = "registration";
+    } else if (department === "Cashier") {
+      navRole = "cashier";
+    }
+  }
+
   return (
     <div className="flex h-screen overflow-hidden">
       <div className="hidden md:block">
-        <Sidebar role={user?.role || ""} />
+        <Sidebar role={navRole} />
       </div>
       <div className="flex flex-1 flex-col overflow-hidden">
         <Topbar />

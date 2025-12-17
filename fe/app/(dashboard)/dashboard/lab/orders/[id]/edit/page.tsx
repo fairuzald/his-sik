@@ -87,17 +87,23 @@ export default function ProcessLabOrderPage() {
     if (typeof params.id !== "string") return;
     setIsSubmitting(true);
 
+    // Only include result if any result field has a value
+    const hasResultData =
+      data.result_value || data.result_unit || data.interpretation;
+
     const result = await safeApiCall(
       updateLabOrderApiLabOrdersOrderIdPatch({
         path: { order_id: params.id },
         body: {
           order_status: data.order_status,
-          result: {
-            result_value: data.result_value || null,
-            result_unit: data.result_unit || null,
-            interpretation: data.interpretation || null,
-          },
-          // file: data.file, // SDK handles File object if FormData serializer is used (commented out in original)
+          // Only include result if there's actual data
+          ...(hasResultData && {
+            result: {
+              result_value: data.result_value || null,
+              result_unit: data.result_unit || null,
+              interpretation: data.interpretation || null,
+            },
+          }),
         },
       }),
       { successMessage: "Lab order updated successfully" }

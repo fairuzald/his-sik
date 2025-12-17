@@ -4,149 +4,153 @@ import { H2, P } from "@/components/elements/typography";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { ArrowLeft, Printer } from "lucide-react";
+import { safeApiCall } from "@/lib/api-handler";
+import { getLabTestApiLabTestsTestIdGet } from "@/sdk/output/sdk.gen";
+import { LabTestDto } from "@/sdk/output/types.gen";
+import { ArrowLeft, Edit, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
-export default function LabOrderViewPage() {
+export default function LabTestDetailPage() {
   const params = useParams();
+  const [test, setTest] = useState<LabTestDto | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Mock data - in real app fetch based on ID
-  const result = {
-    hemoglobin: "14.2",
-    leukocytes: "6.5",
-    platelets: "250",
-  };
+  useEffect(() => {
+    const fetchTest = async () => {
+      if (typeof params.id === "string") {
+        setIsLoading(true);
+        const result = await safeApiCall(
+          getLabTestApiLabTestsTestIdGet({
+            path: { test_id: params.id },
+          })
+        );
+        if (result) {
+          setTest(result);
+        }
+        setIsLoading(false);
+      }
+    };
+    fetchTest();
+  }, [params.id]);
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!test) {
+    return (
+      <div className="p-6">
+        <div className="text-center">
+          <p className="text-muted-foreground">Lab test not found</p>
+          <Button className="mt-4" asChild>
+            <Link href="/dashboard/lab/tests">Back to Tests</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 p-2">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" asChild>
-            <Link href="/dashboard/lab/orders">
+            <Link href="/dashboard/lab/tests">
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
           <div>
             <H2 className="text-primary text-2xl font-bold tracking-tight">
-              Lab Results
+              Lab Test Details
             </H2>
-            <P className="text-muted-foreground">ID: {params.id}</P>
+            <P className="text-muted-foreground">
+              View laboratory test information
+            </P>
           </div>
         </div>
-        <Button variant="outline" className="gap-2">
-          <Printer className="h-4 w-4" />
-          Print Results
+        <Button variant="outline" className="gap-2" asChild>
+          <Link href={`/dashboard/lab/tests/${params.id}/edit`}>
+            <Edit className="h-4 w-4" />
+            Edit Test
+          </Link>
         </Button>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
-        <Card className="shadow-sm md:col-span-2">
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card className="shadow-sm">
           <CardHeader className="bg-muted/20 border-b">
             <CardTitle className="text-primary text-lg">
-              Complete Blood Count
+              Test Information
             </CardTitle>
           </CardHeader>
-          <CardContent className="pt-6">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Parameter</TableHead>
-                  <TableHead>Reference Range</TableHead>
-                  <TableHead>Result Value</TableHead>
-                  <TableHead>Unit</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                <TableRow>
-                  <TableCell className="font-medium">Hemoglobin</TableCell>
-                  <TableCell className="text-muted-foreground text-sm">
-                    13.5 - 17.5
-                  </TableCell>
-                  <TableCell className="font-bold">
-                    {result.hemoglobin}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">g/dL</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell className="font-medium">Leukocytes</TableCell>
-                  <TableCell className="text-muted-foreground text-sm">
-                    4.5 - 11.0
-                  </TableCell>
-                  <TableCell className="font-bold">
-                    {result.leukocytes}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    10^3/uL
-                  </TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell className="font-medium">Platelets</TableCell>
-                  <TableCell className="text-muted-foreground text-sm">
-                    150 - 450
-                  </TableCell>
-                  <TableCell className="font-bold">
-                    {result.platelets}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    10^3/uL
-                  </TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-
-            <div className="mt-8 rounded-md border border-green-100 bg-green-50 p-4">
-              <p className="font-medium text-green-800">Status: Completed</p>
-              <p className="text-sm text-green-700">
-                Verified by: Lab Specialist on 2023-11-20 11:30
+          <CardContent className="space-y-4 pt-6">
+            <div className="space-y-1">
+              <p className="text-muted-foreground text-sm font-medium">
+                Test Code
               </p>
+              <p className="font-mono text-lg font-bold">{test.test_code}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-muted-foreground text-sm font-medium">
+                Test Name
+              </p>
+              <p className="text-lg font-semibold">{test.test_name}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-muted-foreground text-sm font-medium">
+                Category
+              </p>
+              <Badge variant="secondary" className="text-sm">
+                {test.category || "-"}
+              </Badge>
+            </div>
+            <div className="space-y-1">
+              <p className="text-muted-foreground text-sm font-medium">
+                Status
+              </p>
+              <Badge
+                variant={test.is_active ? "default" : "secondary"}
+                className={test.is_active ? "bg-green-500" : ""}
+              >
+                {test.is_active ? "Active" : "Inactive"}
+              </Badge>
             </div>
           </CardContent>
         </Card>
 
-        <div className="space-y-6">
-          <Card className="shadow-sm">
-            <CardHeader className="bg-muted/20 border-b">
-              <CardTitle className="text-primary text-lg">
-                Sample Info
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 pt-6">
-              <div className="space-y-1">
-                <p className="text-muted-foreground text-sm font-medium">
-                  Patient
-                </p>
-                <p className="font-medium">Alice Johnson</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-muted-foreground text-sm font-medium">
-                  Priority
-                </p>
-                <Badge variant="outline">Routine</Badge>
-              </div>
-              <div className="space-y-1">
-                <p className="text-muted-foreground text-sm font-medium">
-                  Sample Type
-                </p>
-                <p className="font-medium">Whole Blood (EDTA)</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-muted-foreground text-sm font-medium">
-                  Collected On
-                </p>
-                <p className="font-medium">2023-11-20 09:45</p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <Card className="shadow-sm">
+          <CardHeader className="bg-muted/20 border-b">
+            <CardTitle className="text-primary text-lg">
+              Test Specifications
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 pt-6">
+            <div className="space-y-1">
+              <p className="text-muted-foreground text-sm font-medium">Price</p>
+              <p className="text-xl font-bold text-green-600">
+                {typeof test.price === "number"
+                  ? `Rp ${test.price.toLocaleString("id-ID")}`
+                  : "-"}
+              </p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-muted-foreground text-sm font-medium">Unit</p>
+              <p className="font-medium">{test.unit || "-"}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-muted-foreground text-sm font-medium">
+                Reference Range
+              </p>
+              <p className="font-medium">{test.reference_range || "-"}</p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

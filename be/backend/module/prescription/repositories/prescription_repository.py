@@ -20,7 +20,18 @@ class PrescriptionRepository:
         self.session.add(prescription)
         await self.session.flush()
         await self.session.refresh(prescription)
-        return prescription
+        
+        # Eagerly load relationships to prevent lazy loading issues
+        stmt = (
+            select(Prescription)
+            .options(
+                selectinload(Prescription.items).joinedload(PrescriptionItem.medicine),
+                joinedload(Prescription.visit)
+            )
+            .where(Prescription.id == prescription.id)
+        )
+        result = await self.session.execute(stmt)
+        return result.scalars().first()
 
     async def get_by_id(self, prescription_id: UUID) -> Optional[Prescription]:
         # Eager load items and visit
@@ -47,7 +58,18 @@ class PrescriptionRepository:
     async def update(self, prescription: Prescription) -> Prescription:
         await self.session.flush()
         await self.session.refresh(prescription)
-        return prescription
+        
+        # Eagerly load relationships to prevent lazy loading issues
+        stmt = (
+            select(Prescription)
+            .options(
+                selectinload(Prescription.items).joinedload(PrescriptionItem.medicine),
+                joinedload(Prescription.visit)
+            )
+            .where(Prescription.id == prescription.id)
+        )
+        result = await self.session.execute(stmt)
+        return result.scalars().first()
 
     async def delete(self, prescription: Prescription) -> None:
         await self.session.delete(prescription)

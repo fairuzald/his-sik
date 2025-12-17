@@ -135,7 +135,11 @@ class PrescriptionUseCase:
             raise NotFoundException("Prescription not found")
 
         prescription.prescription_status = req.prescription_status.value
-        prescription.pharmacy_staff_id = staff_id
+        
+        # Get staff profile to set pharmacy_staff_id (staff table ID, not user ID)
+        staff = await self.profile_repository.get_staff_by_user_id(staff_id)
+        if staff:
+            prescription.pharmacy_staff_id = staff.id
 
         return await self.repository.update(prescription)
 

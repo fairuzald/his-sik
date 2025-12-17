@@ -6,6 +6,7 @@ import {
   CreditCard,
   Database,
   FileText,
+  FilePlus2,
   FlaskConical,
   LayoutDashboard,
   type LucideIcon,
@@ -40,6 +41,11 @@ export const navItems: Record<string, NavItem[]> = {
       href: "/dashboard/patient/labs",
       icon: FlaskConical,
     },
+    {
+      title: "My Referrals",
+      href: "/dashboard/patient/referrals",
+      icon: FilePlus2,
+    },
     { title: "Billing", href: "/dashboard/patient/billing", icon: CreditCard },
     {
       title: "Wearables",
@@ -71,6 +77,11 @@ export const navItems: Record<string, NavItem[]> = {
       title: "Visit History",
       href: "/dashboard/doctor/visits",
       icon: Calendar,
+    },
+    {
+      title: "Referrals",
+      href: "/dashboard/doctor/referrals",
+      icon: FilePlus2,
     },
   ],
   pharmacy: [

@@ -35,74 +35,60 @@ export default function DoctorDashboard() {
 
   useEffect(() => {
     const fetchData = async () => {
-      // 1. Get Profile
+      // 1. Get Profile for doctor name
       const profile = await safeApiCall(getMyProfileApiProfileMeGet());
       if (profile) {
         setDoctorName(profile.full_name);
-        // Assuming the current user is a doctor and has a doctor profile if needed,
-        // but listVisits filters by the doctor associated with the token usually?
-        // Actually, listVisitsApiVisitsGet might return all visits if admin, or filtered if doctor.
-        // Let's assume the backend handles "my visits" logic or we filter by logged in user ID if we had it.
-        // For now, we'll fetch visits and filter client side if necessary, or assume backend filters for 'doctor' role.
-
-        // However, looking at the API, `listVisitsApiVisitsGet` has no explicit `doctor_id` filter in the SDK signature seen previously?
-        // Let's check `ListVisitsApiVisitsGetData`.
-        // It has `visit_status`, `date_from`, `date_to`.
-
-        // Let's fetch today's visits.
-        const today = new Date();
-        const startOfDay = new Date(today.setHours(0, 0, 0, 0)).toISOString();
-        const endOfDay = new Date(
-          today.setHours(23, 59, 59, 999)
-        ).toISOString();
-
-        const visitsData = await safeApiCall(
-          listVisitsApiVisitsGet({
-            query: {
-              date_from: startOfDay,
-              date_to: endOfDay,
-              limit: 50, // Reasonable limit for dashboard
-            },
-          })
-        );
-
-        if (visitsData) {
-          // Filter locally for the logged in doctor if needed (if the API returns all).
-          // Since we don't have the doctor ID easily accessible without strict typing of `profile.details`,
-          // we will assume the API returns relevant visits or show all for now.
-          // In a real app, `profile.details` would be cast to DoctorProfileDao to get the ID.
-
-          let myVisits = visitsData;
-          if (profile.role === "doctor" && profile.details) {
-            const docDetails = profile.details as DoctorProfileDao;
-            // If details has ID (it might be in the parent user object or details depending on backend).
-            // User object has ID. Doctor DAO usually links to User ID.
-            // VisitDto has `doctor_id`.
-            // Let's try to match `doctor_id` with `profile.id` or `profile.details.id`?
-            // The `UserDao` has `id`. `VisitDto.doctor_id` probably refers to `User.id` of the doctor? or `Doctor.id`?
-            // Usually in this system `doctor_id` in Visit links to the User ID of the doctor or a specific Doctor ID.
-            // Let's assume for dashboard we just show what we get.
-            myVisits = visitsData.filter(v => v.doctor_id === profile.id);
-          }
-
-          setVisits(myVisits);
-
-          // Calculate Stats
-          const waiting = myVisits.filter(
-            v => v.visit_status === VisitStatusEnum.REGISTERED
-          ).length;
-          const completed = myVisits.filter(
-            v => v.visit_status === VisitStatusEnum.COMPLETED
-          ).length;
-
-          setStats({
-            waiting,
-            completed,
-            averageTime: "15m", // Mock
-            critical: 0, // Mock
-          });
-        }
       }
+
+      // 2. Fetch today's visits (backend filters for the logged-in doctor)
+      const today = new Date();
+      const startOfDay = new Date(today.setHours(0, 0, 0, 0)).toISOString();
+      const endOfDay = new Date(today.setHours(23, 59, 59, 999)).toISOString();
+
+      const visitsData = await safeApiCall(
+        listVisitsApiVisitsGet({
+          query: {
+            date_from: startOfDay,
+            date_to: endOfDay,
+            limit: 100,
+          },
+        })
+      );
+
+      if (visitsData && profile) {
+        // Filter visits for the logged-in doctor
+        // doctor_id in Visit refers to doctors.id, not users.id
+        // We get the doctor ID from profile.details.id
+        let doctorId: string | null = null;
+        if (profile.role === "doctor" && profile.details) {
+          // Type assertion needed until SDK is regenerated
+          const doctorDetails = profile.details as any;
+          doctorId = doctorDetails.id;
+        }
+
+        const myVisits = doctorId
+          ? visitsData.filter(v => v.doctor_id === doctorId)
+          : [];
+
+        setVisits(myVisits);
+
+        // Calculate Stats
+        const waiting = myVisits.filter(
+          v => v.visit_status === VisitStatusEnum.REGISTERED
+        ).length;
+        const completed = myVisits.filter(
+          v => v.visit_status === VisitStatusEnum.COMPLETED
+        ).length;
+
+        setStats({
+          waiting,
+          completed,
+          averageTime: "15m", // Mock
+          critical: 0, // Mock
+        });
+      }
+
       setIsLoading(false);
     };
 
@@ -154,7 +140,9 @@ export default function DoctorDashboard() {
           variant={
             row.original.visit_status === VisitStatusEnum.EXAMINING
               ? "default"
-              : "secondary"
+              : row.original.visit_status === VisitStatusEnum.COMPLETED
+                ? "secondary"
+                : "outline"
           }
           className={
             row.original.visit_status === VisitStatusEnum.EXAMINING
@@ -173,7 +161,9 @@ export default function DoctorDashboard() {
           <Link href={`/dashboard/doctor/visits/${row.original.id}`}>
             {row.original.visit_status === VisitStatusEnum.EXAMINING
               ? "Resume"
-              : "Start"}
+              : row.original.visit_status === VisitStatusEnum.COMPLETED
+                ? "View Details"
+                : "Start Consult"}
           </Link>
         </Button>
       ),

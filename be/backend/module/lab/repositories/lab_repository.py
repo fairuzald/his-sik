@@ -78,7 +78,19 @@ class LabOrderRepository:
         self.session.add(lab_order)
         await self.session.flush()
         await self.session.refresh(lab_order)
-        return lab_order
+        
+        # Eagerly load relationships to prevent lazy loading issues
+        stmt = (
+            select(LabOrder)
+            .options(
+                joinedload(LabOrder.lab_test),
+                joinedload(LabOrder.visit),
+                joinedload(LabOrder.result)
+            )
+            .where(LabOrder.id == lab_order.id)
+        )
+        result = await self.session.execute(stmt)
+        return result.scalars().first()
 
     async def get_by_id(self, lab_order_id: UUID) -> Optional[LabOrder]:
         stmt = (
@@ -96,7 +108,19 @@ class LabOrderRepository:
     async def update(self, lab_order: LabOrder) -> LabOrder:
         await self.session.flush()
         await self.session.refresh(lab_order)
-        return lab_order
+        
+        # Eagerly load relationships to prevent lazy loading issues
+        stmt = (
+            select(LabOrder)
+            .options(
+                joinedload(LabOrder.lab_test),
+                joinedload(LabOrder.visit),
+                joinedload(LabOrder.result)
+            )
+            .where(LabOrder.id == lab_order.id)
+        )
+        result = await self.session.execute(stmt)
+        return result.scalars().first()
 
     async def list_lab_orders(
         self,

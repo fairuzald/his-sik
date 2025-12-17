@@ -172,27 +172,11 @@ class LabUseCase:
             raise NotFoundException("Lab order not found")
 
         order.order_status = req.order_status
-        order.lab_staff_id = user_id # Staff ID?
-        # Staff ID in lab_order is likely Staff Table ID (Profile).
-        # We need to resolve Staff ID from User ID?
-        # Assuming staff user.
-        # But 'lab_staff_id' column type? Likely PG_UUID referring to Staff.
-        # Let's resolve staff profile.
-        # Assuming RoleEnum.LAB or similar. The auth middleware passes 'user_id'.
-        # We need to get staff profile.
-        # Since currently we only inject ProfileRepository which has get_doctor/patient...
-        # Does it have get_staff?
-        # Inspecting ProfileRepository would be good, but assuming standard pattern:
-        # For now, let's look at `lab_staff_id`. If it's a UUID, and we pass user_id, it might be wrong.
-        # But for Staff, usually the system might not be as strict or we need `get_staff_by_user_id`.
-        # I will check ProfileRepository later inside this Tool if possible or assume it exists/add it?
-        # Actually I can't check inside.
-        # I'll leave it as user_id for now if I'm not sure, BUT likely it's wrong too.
-        # Wait, the user specifically asked about "user id and doctor id comparison".
-        # I'll focus on that.
-        # But standardizing:
-        # order.lab_staff_id = user_id
-        pass
+        
+        # Get staff profile to set lab_staff_id (staff table ID, not user ID)
+        staff = await self.profile_repository.get_staff_by_user_id(user_id)
+        if staff:
+            order.lab_staff_id = staff.id
 
         # Handle result data from request
         result_data = req.result.model_dump(exclude_unset=True) if req.result else {}

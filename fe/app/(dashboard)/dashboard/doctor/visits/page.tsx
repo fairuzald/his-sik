@@ -5,7 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { DataTable } from "@/components/ui/data-table";
 import { safeApiCall } from "@/lib/api-handler";
-import { listVisitsApiVisitsGet } from "@/sdk/output/sdk.gen";
+import {
+  getMyProfileApiProfileMeGet,
+  listVisitsApiVisitsGet,
+} from "@/sdk/output/sdk.gen";
 import { VisitDto, VisitStatusEnum } from "@/sdk/output/types.gen";
 import { Calendar, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -17,6 +20,9 @@ export default function DoctorVisitsPage() {
 
   useEffect(() => {
     const fetchData = async () => {
+      // Get profile to get doctor ID
+      const profile = await safeApiCall(getMyProfileApiProfileMeGet());
+
       const result = await safeApiCall(
         listVisitsApiVisitsGet({
           query: {
@@ -24,8 +30,20 @@ export default function DoctorVisitsPage() {
           },
         })
       );
-      if (result) {
-        setData(result);
+
+      if (result && profile) {
+        // Filter visits for the logged-in doctor
+        let doctorId: string | null = null;
+        if (profile.role === "doctor" && profile.details) {
+          const doctorDetails = profile.details as any;
+          doctorId = doctorDetails.id;
+        }
+
+        const myVisits = doctorId
+          ? result.filter(v => v.doctor_id === doctorId)
+          : [];
+
+        setData(myVisits);
       }
       setIsLoading(false);
     };

@@ -64,7 +64,7 @@ class PrescriptionStatusEnum(str, Enum):
 
 class OrderStatusEnum(str, Enum):
     PENDING = 'pending'
-    IN_PROGRESS = 'in_progress'
+    PROCESSING = 'processing'
     COMPLETED = 'completed'
     CANCELED = 'canceled'
 

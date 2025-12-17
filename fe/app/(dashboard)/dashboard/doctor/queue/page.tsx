@@ -6,7 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataTable } from "@/components/ui/data-table";
 import { safeApiCall } from "@/lib/api-handler";
-import { listVisitsApiVisitsGet } from "@/sdk/output/sdk.gen";
+import {
+  getMyProfileApiProfileMeGet,
+  listVisitsApiVisitsGet,
+} from "@/sdk/output/sdk.gen";
 import { VisitDto, VisitStatusEnum } from "@/sdk/output/types.gen";
 import { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
@@ -20,6 +23,9 @@ export default function DoctorQueuePage() {
 
   useEffect(() => {
     const fetchQueue = async () => {
+      // Get profile to get doctor ID
+      const profile = await safeApiCall(getMyProfileApiProfileMeGet());
+
       const today = new Date();
       const startOfDay = new Date(today.setHours(0, 0, 0, 0)).toISOString();
       const endOfDay = new Date(today.setHours(23, 59, 59, 999)).toISOString();
@@ -34,8 +40,19 @@ export default function DoctorQueuePage() {
         })
       );
 
-      if (visitsList) {
-        setVisits(visitsList);
+      if (visitsList && profile) {
+        // Filter visits for the logged-in doctor
+        let doctorId: string | null = null;
+        if (profile.role === "doctor" && profile.details) {
+          const doctorDetails = profile.details as any;
+          doctorId = doctorDetails.id;
+        }
+
+        const myVisits = doctorId
+          ? visitsList.filter(v => v.doctor_id === doctorId)
+          : [];
+
+        setVisits(myVisits);
       }
       setIsLoading(false);
     };

@@ -105,8 +105,9 @@ export function PrescriptionTab({
         query: { limit: 100 },
       })
     );
-    if (response?.data) {
-      setMedicines(response.data);
+    // API returns array directly, not wrapped in data property
+    if (response && Array.isArray(response)) {
+      setMedicines(response);
     }
   };
 

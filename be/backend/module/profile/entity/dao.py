@@ -1,5 +1,6 @@
 from datetime import date
 from typing import Optional, Union
+from uuid import UUID
 
 from backend.module.common.enums import (
     BloodTypeEnum,
@@ -15,6 +16,7 @@ class StaffProfileDAO(BaseResponseSchema):
 
 
 class DoctorProfileDAO(BaseResponseSchema):
+    id: UUID  # Doctor table ID (not user ID)
     specialty: Optional[str] = None
     sip_number: Optional[str] = None
     str_number: Optional[str] = None
