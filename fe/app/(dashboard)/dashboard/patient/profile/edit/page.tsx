@@ -43,7 +43,8 @@ export default function EditMyProfilePage() {
           bpjs_number: details?.bpjs_number || "",
           date_of_birth: details?.date_of_birth || "",
           gender: details?.gender || undefined,
-          blood_type: details?.blood_type || undefined,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          blood_type: (details?.blood_type ?? undefined) as any,
           address: details?.address || "",
           emergency_contact_name: details?.emergency_contact_name || "",
           emergency_contact_phone: details?.emergency_contact_phone || "",
