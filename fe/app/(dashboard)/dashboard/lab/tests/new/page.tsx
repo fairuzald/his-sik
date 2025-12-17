@@ -19,49 +19,67 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+import { safeApiCall } from "@/lib/api-handler";
+import { createLabTestApiLabTestsPost } from "@/sdk/output/sdk.gen";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft, Loader2, Save } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { toast } from "sonner";
 import * as z from "zod";
 
 const testSchema = z.object({
-  code: z.string().min(1, "Kode diperlukan"),
-  name: z.string().min(1, "Nama diperlukan"),
-  category: z.string().min(1, "Kategori diperlukan"),
-  price: z.string().min(1, "Harga diperlukan"),
-  tat: z.string().min(1, "Waktu pengerjaan diperlukan"),
-  description: z.string().optional(),
-  specimen: z.string().min(1, "Tipe spesimen diperlukan"),
-  department: z.string().min(1, "Departemen diperlukan"),
+  test_code: z.string().min(1, "Code is required"),
+  test_name: z.string().min(1, "Name is required"),
+  category: z.string().min(1, "Category is required"),
+  price: z.string().min(1, "Price is required"),
+  unit: z.string().optional(),
+  reference_range: z.string().optional(),
+  is_active: z.boolean(),
 });
 
-type TestValues = z.infer<typeof testSchema>;
+type TestValues = z.input<typeof testSchema>;
 
 export default function NewTestPage() {
   const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<TestValues>({
     resolver: zodResolver(testSchema),
     defaultValues: {
-      code: "",
-      name: "",
+      test_code: "",
+      test_name: "",
       category: "",
-      price: "",
-      tat: "",
-      description: "",
-      specimen: "",
-      department: "",
+      price: "0",
+      unit: "",
+      reference_range: "",
+      is_active: true,
     },
   });
 
-  const onSubmit = (data: TestValues) => {
-    console.log("New Test Data:", data);
-    toast.success("Tes baru berhasil ditambahkan");
-    router.push("/dashboard/lab/tests");
+  const onSubmit = async (data: TestValues) => {
+    setIsSubmitting(true);
+    const result = await safeApiCall(
+      createLabTestApiLabTestsPost({
+        body: {
+          test_code: data.test_code,
+          test_name: data.test_name,
+          category: data.category,
+          price: parseFloat(data.price) || 0,
+          unit: data.unit || null,
+          reference_range: data.reference_range || null,
+          is_active: data.is_active,
+        },
+      }),
+      { successMessage: "Lab test created successfully" }
+    );
+
+    setIsSubmitting(false);
+
+    if (result) {
+      router.push("/dashboard/lab/tests");
+    }
   };
 
   return (
@@ -74,10 +92,10 @@ export default function NewTestPage() {
         </Button>
         <div>
           <H2 className="text-primary text-2xl font-bold tracking-tight">
-            Tambah Tes Baru
+            Add New Test
           </H2>
           <P className="text-muted-foreground text-sm">
-            Definisikan parameter tes laboratorium baru.
+            Define a new laboratory test parameter.
           </P>
         </div>
       </div>
@@ -87,14 +105,14 @@ export default function NewTestPage() {
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             <FormField
               control={form.control}
-              name="code"
+              name="test_code"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Kode Tes</FormLabel>
+                  <FormLabel>Test Code *</FormLabel>
                   <FormControl>
-                    <Input placeholder="cth. CBC" {...field} />
+                    <Input placeholder="e.g. CBC" {...field} />
                   </FormControl>
-                  <FormDescription>Pengenal unik untuk tes.</FormDescription>
+                  <FormDescription>Unique identifier code.</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -102,12 +120,12 @@ export default function NewTestPage() {
 
             <FormField
               control={form.control}
-              name="name"
+              name="test_name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nama Tes</FormLabel>
+                  <FormLabel>Test Name *</FormLabel>
                   <FormControl>
-                    <Input placeholder="cth. Hitung Darah Lengkap" {...field} />
+                    <Input placeholder="e.g. Complete Blood Count" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -119,77 +137,24 @@ export default function NewTestPage() {
               name="category"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Kategori</FormLabel>
+                  <FormLabel>Category *</FormLabel>
                   <Select
                     onValueChange={field.onChange}
                     defaultValue={field.value}
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Pilih..." />
+                        <SelectValue placeholder="Select..." />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="Hematology">Hematologi</SelectItem>
-                      <SelectItem value="Chemistry">Kimia</SelectItem>
-                      <SelectItem value="Microbiology">Mikrobiologi</SelectItem>
-                      <SelectItem value="Immunology">Imunologi</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="department"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Departemen</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Pilih..." />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="Main Lab">Lab Utama</SelectItem>
-                      <SelectItem value="Emergency Lab">Lab Darurat</SelectItem>
-                      <SelectItem value="Outpatient Lab">
-                        Lab Rawat Jalan
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="specimen"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Tipe Spesimen</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Pilih spesimen..." />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="Whole Blood">Darah Utuh</SelectItem>
-                      <SelectItem value="Serum">Serum</SelectItem>
-                      <SelectItem value="Plasma">Plasma</SelectItem>
-                      <SelectItem value="Urine">Urin</SelectItem>
-                      <SelectItem value="Stool">Tinja</SelectItem>
+                      <SelectItem value="Hematology">Hematology</SelectItem>
+                      <SelectItem value="Chemistry">Chemistry</SelectItem>
+                      <SelectItem value="Microbiology">Microbiology</SelectItem>
+                      <SelectItem value="Immunology">Immunology</SelectItem>
+                      <SelectItem value="Serology">Serology</SelectItem>
+                      <SelectItem value="Urinalysis">Urinalysis</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -202,9 +167,9 @@ export default function NewTestPage() {
               name="price"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Harga (Rp)</FormLabel>
+                  <FormLabel>Price (Rp) *</FormLabel>
                   <FormControl>
-                    <Input type="number" placeholder="cth. 150000" {...field} />
+                    <Input type="number" placeholder="0" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -213,13 +178,14 @@ export default function NewTestPage() {
 
             <FormField
               control={form.control}
-              name="tat"
+              name="unit"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Waktu Pengerjaan</FormLabel>
+                  <FormLabel>Unit</FormLabel>
                   <FormControl>
-                    <Input placeholder="cth. 2 jam" {...field} />
+                    <Input placeholder="e.g. mg/dL" {...field} />
                   </FormControl>
+                  <FormDescription>Measurement unit.</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -227,17 +193,16 @@ export default function NewTestPage() {
 
             <FormField
               control={form.control}
-              name="description"
+              name="reference_range"
               render={({ field }) => (
-                <FormItem className="col-span-full">
-                  <FormLabel>Deskripsi</FormLabel>
+                <FormItem>
+                  <FormLabel>Reference Range</FormLabel>
                   <FormControl>
-                    <Textarea
-                      placeholder="Deskripsi singkat tes..."
-                      className="resize-none"
-                      {...field}
-                    />
+                    <Input placeholder="e.g. 10-20" {...field} />
                   </FormControl>
+                  <FormDescription>
+                    Normal range for interpretation.
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -245,9 +210,18 @@ export default function NewTestPage() {
           </div>
 
           <div className="flex justify-end">
-            <Button type="submit" size="lg" className="gap-2 px-8">
-              <Save className="h-4 w-4" />
-              Simpan Definisi Tes
+            <Button
+              type="submit"
+              size="lg"
+              className="gap-2 px-8"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4" />
+              )}
+              Save Test
             </Button>
           </div>
         </form>

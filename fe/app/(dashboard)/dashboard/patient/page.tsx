@@ -150,51 +150,49 @@ export default function PatientDashboard() {
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <H2 className="text-primary text-3xl font-bold tracking-tight">
-            Selamat Pagi, {name || "Patient"}
+            Good Morning, {name || "Patient"}
           </H2>
           <P className="text-muted-foreground mt-1">
-            Berikut ringkasan kesehatan Anda hari ini.
+            Here is your health summary for today.
           </P>
         </div>
         <Button
           className="w-full shadow-md transition-all hover:shadow-lg md:w-auto"
           asChild
         >
-          <Link href="/dashboard/patient/visits/new">Buat Janji Temu</Link>
+          <Link href="/dashboard/patient/visits/new">Book Appointment</Link>
         </Button>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          title="Kunjungan Mendatang"
+          title="Upcoming Visits"
           value={upcomingVisits.length.toString()}
           description={
             upcomingVisits[0]
-              ? `Berikutnya: ${format(new Date(upcomingVisits[0].visit_datetime || new Date()), "dd MMMM")}`
-              : "Tidak ada kunjungan mendatang"
+              ? `Next: ${format(new Date(upcomingVisits[0].visit_datetime || new Date()), "dd MMMM")}`
+              : "No upcoming visits"
           }
           icon={Calendar}
         />
         <StatCard
-          title="Resep Aktif"
+          title="Active Prescriptions"
           value={activePrescriptionsCount.toString()}
-          description="Resep sedang diproses/pending"
+          description="Prescriptions being processed"
           icon={Pill}
         />
         <StatCard
-          title="Tagihan Belum Dibayar"
+          title="Unpaid Balance"
           value={`Rp ${unpaidInvoicesBalance.toLocaleString("id-ID")}`}
-          description={
-            unpaidInvoicesBalance > 0 ? "Segera lakukan pembayaran" : "Lunas"
-          }
+          description={unpaidInvoicesBalance > 0 ? "Payment required" : "Paid"}
           icon={CreditCard}
           trend={unpaidInvoicesBalance > 0 ? "Unpaid" : "Paid"}
           trendUp={unpaidInvoicesBalance === 0}
         />
         <StatCard
-          title="Skor Kesehatan"
+          title="Health Score"
           value="92"
-          description="Kondisi sangat baik"
+          description="Excellent condition"
           icon={Activity}
           trend="+2.5%"
           trendUp={true}
@@ -204,7 +202,7 @@ export default function PatientDashboard() {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
         <div className="col-span-4 space-y-6">
           <WearableChart
-            title="Monitor Detak Jantung"
+            title="Heart Rate Monitor"
             data={
               heartRateData.length > 0
                 ? heartRateData
@@ -219,14 +217,14 @@ export default function PatientDashboard() {
         <Card className="col-span-3 h-fit shadow-sm">
           <CardHeader>
             <CardTitle className="text-primary text-xl">
-              Janji Temu Mendatang
+              Upcoming Appointments
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
               {upcomingVisits.length === 0 && (
                 <P className="text-muted-foreground text-sm">
-                  Tidak ada janji temu mendatang.
+                  No upcoming appointments.
                 </P>
               )}
               {upcomingVisits.map((apt, i) => (
@@ -236,7 +234,7 @@ export default function PatientDashboard() {
                 >
                   <div className="space-y-1">
                     <H4 className="text-base font-semibold leading-none">
-                      {clinics[apt.clinic_id] || "Klinik"}
+                      {clinics[apt.clinic_id] || "Clinic"}
                     </H4>
                     <Small className="text-muted-foreground block">
                       {apt.visit_type}

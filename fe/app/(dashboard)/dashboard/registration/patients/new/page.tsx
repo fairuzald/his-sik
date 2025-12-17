@@ -1,22 +1,39 @@
 "use client";
 
 import { H2, P } from "@/components/elements/typography";
-import { PatientForm } from "@/components/forms/patient-form";
+import { UserForm } from "@/components/forms/UserForm"; // Use generic UserForm
 import { Button } from "@/components/ui/button";
-import { Patient } from "@/data/mock-data";
+import { safeApiCall } from "@/lib/api-handler";
+import { createUserApiUsersPost } from "@/sdk/output/sdk.gen";
+import { CreateUserDto } from "@/sdk/output/types.gen"; // Use CreateUserDto
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
 
 export default function NewPatientPage() {
   const router = useRouter();
 
-  const handleSubmit = (data: Partial<Patient>) => {
-    // In a real app, this would be an API call
-    console.log("Creating patient:", data);
-    toast.success("Pasien berhasil dibuat");
-    router.push("/dashboard/registration/patients");
+  const handleSubmit = async (data: any) => {
+    // Map form data to CreateUserDto. UserForm produces CreateUserDto-like structure.
+    const payload: CreateUserDto = {
+      username: data.username,
+      password: data.password,
+      full_name: data.full_name,
+      role: "patient", // Force role
+      email: data.email || null,
+      phone_number: data.phone_number || null,
+    };
+
+    const result = await safeApiCall(
+      createUserApiUsersPost({
+        body: payload,
+      }),
+      { successMessage: "Patient account created successfully" }
+    );
+
+    if (result) {
+      router.push("/dashboard/registration/patients");
+    }
   };
 
   return (
@@ -29,16 +46,22 @@ export default function NewPatientPage() {
         </Button>
         <div>
           <H2 className="text-primary text-2xl font-bold tracking-tight">
-            Pasien Baru
+            New Patient
           </H2>
           <P className="text-muted-foreground text-sm">
-            Daftarkan pasien baru ke dalam sistem.
+            Register a new patient account in the system.
           </P>
         </div>
       </div>
 
       <div className="w-full">
-        <PatientForm onSubmit={handleSubmit} onCancel={() => router.back()} />
+        {/* Pass initial data to pre-select role if supported, or handled in submit */}
+        <UserForm
+          defaultValues={{ role: "patient" }}
+          onSubmit={handleSubmit}
+          isAdmin={false}
+        />
+        {/* Note: UserForm 'isAdmin' prop controls role field visibility? checking UserForm next. */}
       </div>
     </div>
   );

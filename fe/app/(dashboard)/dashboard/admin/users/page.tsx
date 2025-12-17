@@ -5,13 +5,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { DataTable } from "@/components/ui/data-table";
-import { listUsersApiUsersGet } from "@/sdk/output/sdk.gen"; // Use SDK API
-import { UserDao } from "@/sdk/output/types.gen"; // Use SDK type
+import { safeApiCall } from "@/lib/api-handler";
+import { listUsersApiUsersGet } from "@/sdk/output/sdk.gen";
+import { UserDao } from "@/sdk/output/types.gen";
 import { ColumnDef } from "@tanstack/react-table";
 import { Plus, RefreshCcw } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
 import { UserActionsCell } from "./actions-cell";
 
 const columns: ColumnDef<UserDao>[] = [
@@ -39,8 +39,7 @@ const columns: ColumnDef<UserDao>[] = [
   },
   {
     id: "actions",
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    cell: ({ row }) => <UserActionsCell user={row.original as any} />,
+    cell: ({ row }) => <UserActionsCell user={row.original} />,
   },
 ];
 
@@ -50,6 +49,9 @@ const filterOptions = [
   { label: "Pharmacy", value: "pharmacy" },
   { label: "Admin", value: "admin" },
   { label: "Patient", value: "patient" },
+  { label: "Nurse", value: "nurse" },
+  { label: "Lab", value: "lab" },
+  { label: "Cashier", value: "cashier" },
 ];
 
 export default function AdminUsersPage() {
@@ -58,19 +60,16 @@ export default function AdminUsersPage() {
 
   const fetchUsers = async () => {
     setIsLoading(true);
-    try {
-      const response = await listUsersApiUsersGet();
-      if (response.data?.success && response.data.data) {
-        setUsers(response.data.data);
-      } else {
-        toast.error(response.data?.message || "Failed to fetch users");
-      }
-    } catch (error) {
-      console.error("Error fetching users:", error);
-      toast.error("Error fetching users");
-    } finally {
-      setIsLoading(false);
+    const result = await safeApiCall(
+      listUsersApiUsersGet({
+        query: { limit: 100 },
+      })
+    );
+
+    if (result && Array.isArray(result)) {
+      setUsers(result);
     }
+    setIsLoading(false);
   };
 
   useEffect(() => {

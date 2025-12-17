@@ -11,35 +11,61 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { users } from "@/data/mock-data";
+import { safeApiCall } from "@/lib/api-handler";
+import { listUsersApiUsersGet } from "@/sdk/output/sdk.gen";
+import { UserDao } from "@/sdk/output/types.gen";
+import { Loader2 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 export default function EditUserPage() {
   const params = useParams();
+  const userId = params.id as string;
   const router = useRouter();
+  const [user, setUser] = useState<UserDao | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // In a real app, we would fetch the user from API.
-  // Since there is no specific endpoint for this in the current SDK for Admin,
-  // we will simulate it or use the mock data if available
-  const user = users.find(u => u.id === params.id);
-
-  if (!user) {
-    return <div>User not found</div>;
-  }
+  useEffect(() => {
+    const fetchUser = async () => {
+      setIsLoading(true);
+      // Since there's no single-user GET endpoint, fetch from list
+      const result = await safeApiCall(
+        listUsersApiUsersGet({ query: { limit: 500 } })
+      );
+      if (result && Array.isArray(result)) {
+        const foundUser = result.find(u => u.id === userId);
+        if (foundUser) {
+          setUser(foundUser);
+        }
+      }
+      setIsLoading(false);
+    };
+    fetchUser();
+  }, [userId]);
 
   const onSubmit = async (data: UserFormValues) => {
-    // In a real implementation, we would call an update API here.
-    // e.g., await updateUserApiUsersUserIdPut(...)
-
-    console.log("Updating user:", data);
-
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    toast.success("User updated successfully (Simulation)");
+    setIsSubmitting(true);
+    // Note: The current SDK doesn't have a user update endpoint.
+    // This would need to be added to the backend API.
+    console.log("User update data:", data);
+    toast.info("User update API not available in current SDK version");
+    setIsSubmitting(false);
     router.push("/dashboard/admin/users");
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <div className="p-8 text-center">User not found</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -75,16 +101,17 @@ export default function EditUserPage() {
         <CardContent className="pt-6">
           <UserForm
             defaultValues={{
-              full_name: user?.username || "", // Warning: accessing mock data structure.
-              // Adjusting to match Mock Data structure if possible, usually it has username etc.
-              username: user?.username || "",
-              email: user?.email || "",
-              // role: user?.role_name || "", // Role mapping might be needed
+              full_name: user.full_name || "",
+              username: user.username || "",
+              email: user.email || "",
+              phone_number: user.phone_number || "",
+              role: user.role || "patient",
             }}
             onSubmit={onSubmit}
             isAdmin={true}
             mode="edit"
             submitText="Update User"
+            isLoading={isSubmitting}
           />
         </CardContent>
       </Card>

@@ -4,24 +4,56 @@ import { H2, P, Small } from "@/components/elements/typography";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { visits } from "@/data/mock-data";
+import { safeApiCall } from "@/lib/api-handler";
+import { getVisitApiVisitsVisitIdGet } from "@/sdk/output/sdk.gen";
+import { VisitDto } from "@/sdk/output/types.gen";
+import { format } from "date-fns";
 import {
   ArrowLeft,
   Calendar,
   Clock,
+  Loader2,
   MapPin,
   Stethoscope,
   User,
 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function VisitDetailPage() {
   const params = useParams();
-  const visit = visits.find(v => v.id === params.id) || visits[0]; // Fallback for demo
+  const [visit, setVisit] = useState<VisitDto | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchVisit = async () => {
+      setIsLoading(true);
+      if (typeof params.id === "string") {
+        const result = await safeApiCall(
+          getVisitApiVisitsVisitIdGet({
+            path: { visit_id: params.id },
+          })
+        );
+        if (result) {
+          setVisit(result);
+        }
+      }
+      setIsLoading(false);
+    };
+    fetchVisit();
+  }, [params.id]);
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   if (!visit) {
-    return <div>Kunjungan tidak ditemukan</div>;
+    return <div>Visit not found</div>;
   }
 
   return (
@@ -34,7 +66,7 @@ export default function VisitDetailPage() {
         </Button>
         <div>
           <H2 className="text-primary text-2xl font-bold tracking-tight">
-            Detail Kunjungan
+            Visit Details
           </H2>
           <P className="text-muted-foreground">ID: {visit.id}</P>
         </div>
@@ -45,12 +77,14 @@ export default function VisitDetailPage() {
           <CardHeader className="bg-muted/20 border-b pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg font-medium">
-                Info Janji Temu
+                Appointment Info
               </CardTitle>
               <Badge
-                variant={visit.status === "Selesai" ? "default" : "secondary"}
+                variant={
+                  visit.visit_status === "completed" ? "default" : "secondary"
+                }
               >
-                {visit.status}
+                {visit.visit_status}
               </Badge>
             </div>
           </CardHeader>
@@ -58,27 +92,31 @@ export default function VisitDetailPage() {
             <div className="flex items-start gap-3">
               <Calendar className="text-muted-foreground mt-0.5 h-5 w-5" />
               <div>
-                <Small className="text-muted-foreground">Tanggal</Small>
+                <Small className="text-muted-foreground">Date</Small>
                 <P className="font-medium">
-                  {visit.visit_datetime.split(" ")[0]}
+                  {visit.visit_datetime
+                    ? format(new Date(visit.visit_datetime), "PP")
+                    : "-"}
                 </P>
               </div>
             </div>
             <div className="flex items-start gap-3">
               <Clock className="text-muted-foreground mt-0.5 h-5 w-5" />
               <div>
-                <Small className="text-muted-foreground">Waktu</Small>
+                <Small className="text-muted-foreground">Time</Small>
                 <P className="font-medium">
-                  {visit.visit_datetime.split(" ")[1]}
+                  {visit.visit_datetime
+                    ? format(new Date(visit.visit_datetime), "p")
+                    : "-"}
                 </P>
               </div>
             </div>
             <div className="flex items-start gap-3">
               <Stethoscope className="text-muted-foreground mt-0.5 h-5 w-5" />
               <div>
-                <Small className="text-muted-foreground">Tipe</Small>
+                <Small className="text-muted-foreground">Type</Small>
                 <P className="font-medium capitalize">
-                  {visit.visit_type.replace("_", " ")}
+                  {visit.visit_type?.replace(/_/g, " ")}
                 </P>
               </div>
             </div>
@@ -87,28 +125,34 @@ export default function VisitDetailPage() {
 
         <Card className="shadow-sm">
           <CardHeader className="bg-muted/20 border-b pb-2">
-            <CardTitle className="text-lg font-medium">Peserta</CardTitle>
+            <CardTitle className="text-lg font-medium">Participants</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 pt-4">
             <div className="flex items-start gap-3">
               <User className="text-muted-foreground mt-0.5 h-5 w-5" />
               <div>
-                <Small className="text-muted-foreground">Pasien</Small>
-                <P className="font-medium">{visit.patient_name}</P>
+                <Small className="text-muted-foreground">Patient</Small>
+                <P className="font-medium">
+                  {visit.patient_id.substring(0, 8)}...
+                </P>
               </div>
             </div>
             <div className="flex items-start gap-3">
               <User className="text-muted-foreground mt-0.5 h-5 w-5" />
               <div>
-                <Small className="text-muted-foreground">Dokter</Small>
-                <P className="font-medium">{visit.doctor_name}</P>
+                <Small className="text-muted-foreground">Doctor</Small>
+                <P className="font-medium">
+                  {visit.doctor_id.substring(0, 8)}...
+                </P>
               </div>
             </div>
             <div className="flex items-start gap-3">
               <MapPin className="text-muted-foreground mt-0.5 h-5 w-5" />
               <div>
-                <Small className="text-muted-foreground">Klinik</Small>
-                <P className="font-medium">{visit.clinic}</P>
+                <Small className="text-muted-foreground">Clinic</Small>
+                <P className="font-medium">
+                  {visit.clinic_id.substring(0, 8)}...
+                </P>
               </div>
             </div>
           </CardContent>

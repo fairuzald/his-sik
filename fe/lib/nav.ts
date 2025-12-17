@@ -21,70 +21,94 @@ export type NavItem = {
 
 export const navItems: Record<string, NavItem[]> = {
   patient: [
-    { title: "Dasbor", href: "/dashboard/patient", icon: LayoutDashboard },
-    { title: "Profil", href: "/dashboard/patient/profile", icon: User },
-    { title: "Kunjungan", href: "/dashboard/patient/visits", icon: Calendar },
+    { title: "Dashboard", href: "/dashboard/patient", icon: LayoutDashboard },
+    { title: "Profile", href: "/dashboard/patient/profile", icon: User },
+    { title: "Visits", href: "/dashboard/patient/visits", icon: Calendar },
     {
-      title: "Rekam Medis",
+      title: "Medical Records",
       href: "/dashboard/patient/records",
       icon: FileText,
     },
-    { title: "Resep", href: "/dashboard/patient/prescriptions", icon: Pill },
-    { title: "Hasil Lab", href: "/dashboard/patient/labs", icon: FlaskConical },
-    { title: "Tagihan", href: "/dashboard/patient/billing", icon: CreditCard },
     {
-      title: "Perangkat Wearable",
+      title: "Prescriptions",
+      href: "/dashboard/patient/prescriptions",
+      icon: Pill,
+    },
+    {
+      title: "Lab Results",
+      href: "/dashboard/patient/labs",
+      icon: FlaskConical,
+    },
+    { title: "Billing", href: "/dashboard/patient/billing", icon: CreditCard },
+    {
+      title: "Wearables",
       href: "/dashboard/patient/wearables",
       icon: Activity,
     },
   ],
   registration: [
-    { title: "Dasbor", href: "/dashboard/registration", icon: LayoutDashboard },
-    { title: "Pasien", href: "/dashboard/registration/patients", icon: Users },
     {
-      title: "Kunjungan",
+      title: "Dashboard",
+      href: "/dashboard/registration",
+      icon: LayoutDashboard,
+    },
+    {
+      title: "Patients",
+      href: "/dashboard/registration/patients",
+      icon: Users,
+    },
+    {
+      title: "Visits",
       href: "/dashboard/registration/visits",
       icon: Calendar,
     },
   ],
   doctor: [
-    { title: "Dasbor", href: "/dashboard/doctor", icon: LayoutDashboard },
-    { title: "Antrean Saya", href: "/dashboard/doctor/queue", icon: Users },
+    { title: "Dashboard", href: "/dashboard/doctor", icon: LayoutDashboard },
+    { title: "My Queue", href: "/dashboard/doctor/queue", icon: Users },
     {
-      title: "Riwayat Kunjungan",
+      title: "Visit History",
       href: "/dashboard/doctor/visits",
       icon: Calendar,
     },
   ],
   pharmacy: [
-    { title: "Dasbor", href: "/dashboard/pharmacy", icon: LayoutDashboard },
-    { title: "Resep", href: "/dashboard/pharmacy/prescriptions", icon: Pill },
+    { title: "Dashboard", href: "/dashboard/pharmacy", icon: LayoutDashboard },
     {
-      title: "Inventaris",
+      title: "Prescriptions",
+      href: "/dashboard/pharmacy/prescriptions",
+      icon: Pill,
+    },
+    {
+      title: "Inventory",
       href: "/dashboard/pharmacy/inventory",
       icon: Database,
     },
   ],
   lab: [
-    { title: "Dasbor", href: "/dashboard/lab", icon: LayoutDashboard },
-    { title: "Pesanan Lab", href: "/dashboard/lab/orders", icon: FlaskConical },
+    { title: "Dashboard", href: "/dashboard/lab", icon: LayoutDashboard },
+    { title: "Lab Orders", href: "/dashboard/lab/orders", icon: FlaskConical },
     {
-      title: "Direktori Tes",
+      title: "Test Directory",
       href: "/dashboard/lab/tests",
       icon: ClipboardList,
     },
   ],
   cashier: [
-    { title: "Dasbor", href: "/dashboard/cashier", icon: LayoutDashboard },
-    { title: "Faktur", href: "/dashboard/cashier/invoices", icon: CreditCard },
+    { title: "Dashboard", href: "/dashboard/cashier", icon: LayoutDashboard },
     {
-      title: "Pembayaran",
+      title: "Invoices",
+      href: "/dashboard/cashier/invoices",
+      icon: CreditCard,
+    },
+    {
+      title: "Payments",
       href: "/dashboard/cashier/payments",
       icon: FileText,
     },
   ],
   admin: [
-    { title: "Dasbor", href: "/dashboard/admin", icon: LayoutDashboard },
-    { title: "Pengguna", href: "/dashboard/admin/users", icon: Users },
+    { title: "Dashboard", href: "/dashboard/admin", icon: LayoutDashboard },
+    { title: "Users", href: "/dashboard/admin/users", icon: Users },
   ],
 };

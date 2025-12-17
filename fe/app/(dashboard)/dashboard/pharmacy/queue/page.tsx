@@ -4,92 +4,68 @@ import { H2, P } from "@/components/elements/typography";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/ui/data-table";
+import { safeApiCall } from "@/lib/api-handler";
+import { listPrescriptionsApiPrescriptionsGet } from "@/sdk/output/sdk.gen";
+import { PrescriptionDto } from "@/sdk/output/types.gen";
 import { ColumnDef } from "@tanstack/react-table";
-import { Check, Clock } from "lucide-react";
+import { format } from "date-fns";
+import { Loader2 } from "lucide-react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 
-type QueueItem = {
-  id: string;
-  patient: string;
-  doctor: string;
-  items: number;
-  status: string;
-  time: string;
-};
-
-const queue: QueueItem[] = [
+const columns: ColumnDef<PrescriptionDto>[] = [
   {
-    id: "RX-001",
-    patient: "Alice Johnson",
-    doctor: "Dr. Sarah Wilson",
-    items: 3,
-    status: "Tertunda",
-    time: "10:00",
-  },
-  {
-    id: "RX-002",
-    patient: "Bob Smith",
-    doctor: "Dr. James Brown",
-    items: 1,
-    status: "Sedang Diproses",
-    time: "10:15",
-  },
-  {
-    id: "RX-003",
-    patient: "Charlie Brown",
-    doctor: "Dr. Emily Chen",
-    items: 2,
-    status: "Siap",
-    time: "09:45",
-  },
-  {
-    id: "RX-004",
-    patient: "Diana Prince",
-    doctor: "Dr. Sarah Wilson",
-    items: 4,
-    status: "Tertunda",
-    time: "10:30",
-  },
-];
-
-const columns: ColumnDef<QueueItem>[] = [
-  {
-    accessorKey: "time",
-    header: "Waktu",
+    accessorKey: "created_at",
+    header: "Time",
     cell: ({ row }) => (
-      <span className="font-mono">{row.getValue("time")}</span>
+      <span className="font-mono">
+        {format(new Date(row.original.created_at), "p")}
+      </span>
     ),
   },
   {
     accessorKey: "id",
-    header: "ID Resep",
+    header: "Prescription ID",
     cell: ({ row }) => (
-      <span className="font-medium">{row.getValue("id")}</span>
+      <span className="font-medium">{row.original.id.substring(0, 8)}...</span>
     ),
   },
   {
-    accessorKey: "patient",
-    header: "Pasien",
+    accessorKey: "visit.patient_id",
+    header: "Patient",
+    cell: ({ row }) => (
+      <span>
+        {row.original.visit?.patient_id
+          ? row.original.visit.patient_id.substring(0, 8) + "..."
+          : "-"}
+      </span>
+    ),
   },
   {
-    accessorKey: "doctor",
-    header: "Dokter",
+    accessorKey: "doctor_id",
+    header: "Doctor",
+    cell: ({ row }) => (
+      <span className="text-xs">
+        {row.original.doctor_id.substring(0, 8)}...
+      </span>
+    ),
   },
   {
-    accessorKey: "items",
-    header: "Item",
+    header: "Items",
+    cell: ({ row }) => <span>{row.original.items?.length || 0}</span>,
   },
   {
-    accessorKey: "status",
+    accessorKey: "prescription_status",
     header: "Status",
     cell: ({ row }) => {
-      const status = row.getValue("status") as string;
+      const status = row.original.prescription_status;
       return (
         <Badge
-          variant={status === "Siap" ? "default" : "secondary"}
+          variant={status === "completed" ? "default" : "secondary"}
           className={
-            status === "Siap"
+            status === "completed"
               ? "bg-green-500"
-              : status === "Sedang Diproses"
+              : status === "processing"
                 ? "bg-blue-500 text-white"
                 : ""
           }
@@ -102,26 +78,14 @@ const columns: ColumnDef<QueueItem>[] = [
   {
     id: "actions",
     cell: ({ row }) => {
-      const status = row.original.status;
+      const status = row.original.prescription_status;
       return (
         <div className="flex justify-end gap-2">
-          {status === "Tertunda" && (
-            <Button size="sm" className="gap-2">
-              <Clock className="h-3 w-3" />
-              Mulai Proses
-            </Button>
-          )}
-          {status === "Sedang Diproses" && (
-            <Button size="sm" className="gap-2 bg-green-600 hover:bg-green-700">
-              <Check className="h-3 w-3" />
-              Tandai Siap
-            </Button>
-          )}
-          {status === "Siap" && (
-            <Button size="sm" variant="outline">
-              Keluarkan
-            </Button>
-          )}
+          <Button size="sm" variant="ghost" asChild>
+            <Link href={`/dashboard/pharmacy/prescriptions/${row.original.id}`}>
+              {status === "completed" ? "View" : "Process"}
+            </Link>
+          </Button>
         </div>
       );
     },
@@ -129,16 +93,56 @@ const columns: ColumnDef<QueueItem>[] = [
 ];
 
 export default function PharmacyQueuePage() {
+  const [data, setData] = useState<PrescriptionDto[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      const result = await safeApiCall(
+        listPrescriptionsApiPrescriptionsGet({
+          query: { limit: 100 },
+        })
+      );
+
+      if (result && Array.isArray(result)) {
+        setData(result);
+      }
+      setIsLoading(false);
+    };
+    fetchData();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8 p-2">
       <div>
         <H2 className="text-primary text-3xl font-bold tracking-tight">
-          Antrean Resep
+          Prescription Queue
         </H2>
-        <P className="text-muted-foreground mt-1">Proses resep masuk.</P>
+        <P className="text-muted-foreground mt-1">
+          Process incoming prescriptions.
+        </P>
       </div>
 
-      <DataTable columns={columns} data={queue} searchKey="patient" />
+      <DataTable
+        columns={columns}
+        data={data}
+        searchKey="id"
+        filterKey="prescription_status"
+        filterOptions={[
+          { label: "Pending", value: "pending" },
+          { label: "Processing", value: "processing" },
+          { label: "Completed", value: "completed" },
+        ]}
+      />
     </div>
   );
 }

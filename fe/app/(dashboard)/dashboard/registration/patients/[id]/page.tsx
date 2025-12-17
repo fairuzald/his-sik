@@ -22,7 +22,7 @@ export default function PatientDetailPage() {
   const patient = patients.find(p => p.id === params.id) || patients[0]; // Fallback for demo
 
   if (!patient) {
-    return <div>Pasien tidak ditemukan</div>;
+    return <div>Patient not found</div>;
   }
 
   // Find visits for this patient
@@ -44,10 +44,10 @@ export default function PatientDetailPage() {
         </Button>
         <div>
           <H2 className="text-primary text-2xl font-bold tracking-tight">
-            Detail Pasien
+            Patient Details
           </H2>
           <P className="text-muted-foreground">
-            No. RM: {patient.medical_record_number}
+            MRN: {patient.medical_record_number}
           </P>
         </div>
       </div>
@@ -57,7 +57,7 @@ export default function PatientDetailPage() {
           <CardHeader className="bg-muted/20 border-b pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg font-medium">
-                Informasi Pribadi
+                Personal Information
               </CardTitle>
               <Badge
                 variant={patient.status === "Aktif" ? "default" : "secondary"}
@@ -70,21 +70,21 @@ export default function PatientDetailPage() {
             <div className="flex items-start gap-3">
               <User className="text-muted-foreground mt-0.5 h-5 w-5" />
               <div>
-                <Small className="text-muted-foreground">Nama Lengkap</Small>
+                <Small className="text-muted-foreground">Full Name</Small>
                 <P className="font-medium">{patient.full_name}</P>
               </div>
             </div>
             <div className="flex items-start gap-3">
               <CreditCard className="text-muted-foreground mt-0.5 h-5 w-5" />
               <div>
-                <Small className="text-muted-foreground">NIK</Small>
+                <Small className="text-muted-foreground">ID Number</Small>
                 <P className="font-medium">{patient.nik}</P>
               </div>
             </div>
             <div className="flex items-start gap-3">
               <Calendar className="text-muted-foreground mt-0.5 h-5 w-5" />
               <div>
-                <Small className="text-muted-foreground">Tanggal Lahir</Small>
+                <Small className="text-muted-foreground">Date of Birth</Small>
                 <P className="font-medium">
                   {patient.birth_date} ({patient.gender})
                 </P>
@@ -96,21 +96,21 @@ export default function PatientDetailPage() {
         <Card className="shadow-sm">
           <CardHeader className="bg-muted/20 border-b pb-2">
             <CardTitle className="text-lg font-medium">
-              Informasi Kontak
+              Contact Information
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 pt-4">
             <div className="flex items-start gap-3">
               <Phone className="text-muted-foreground mt-0.5 h-5 w-5" />
               <div>
-                <Small className="text-muted-foreground">Nomor Telepon</Small>
+                <Small className="text-muted-foreground">Phone Number</Small>
                 <P className="font-medium">{patient.phone_number}</P>
               </div>
             </div>
             <div className="flex items-start gap-3">
               <MapPin className="text-muted-foreground mt-0.5 h-5 w-5" />
               <div>
-                <Small className="text-muted-foreground">Alamat</Small>
+                <Small className="text-muted-foreground">Address</Small>
                 <P className="font-medium">{patient.full_address}</P>
                 <P className="text-muted-foreground text-sm">{patient.city}</P>
               </div>
@@ -121,7 +121,7 @@ export default function PatientDetailPage() {
 
       <Card className="shadow-sm">
         <CardHeader className="bg-muted/20 border-b pb-2">
-          <CardTitle className="text-lg font-medium">Rekam Medis</CardTitle>
+          <CardTitle className="text-lg font-medium">Medical Records</CardTitle>
         </CardHeader>
         <CardContent className="pt-4">
           {patientRecords.length > 0 ? (
@@ -141,7 +141,7 @@ export default function PatientDetailPage() {
                         <Badge variant="outline">{record.date}</Badge>
                       </div>
                       <P className="text-muted-foreground text-sm">
-                        Dokter: {record.doctor_name}
+                        Doctor: {record.doctor_name}
                       </P>
                       <div className="mt-2 grid gap-2 md:grid-cols-2">
                         <div className="bg-muted/30 rounded p-2">
@@ -152,7 +152,7 @@ export default function PatientDetailPage() {
                         </div>
                         <div className="bg-muted/30 rounded p-2">
                           <Small className="text-muted-foreground font-semibold">
-                            Rencana Pengobatan
+                            Treatment Plan
                           </Small>
                           <P className="text-sm">{record.treatment_plan}</P>
                         </div>
@@ -164,7 +164,7 @@ export default function PatientDetailPage() {
             </div>
           ) : (
             <P className="text-muted-foreground py-4 text-center">
-              Tidak ada rekam medis ditemukan untuk pasien ini.
+              No medical records found for this patient.
             </P>
           )}
         </CardContent>

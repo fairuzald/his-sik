@@ -37,14 +37,14 @@ export default function LabOrderViewPage() {
           </Button>
           <div>
             <H2 className="text-primary text-2xl font-bold tracking-tight">
-              Hasil Lab
+              Lab Results
             </H2>
             <P className="text-muted-foreground">ID: {params.id}</P>
           </div>
         </div>
         <Button variant="outline" className="gap-2">
           <Printer className="h-4 w-4" />
-          Cetak Hasil
+          Print Results
         </Button>
       </div>
 
@@ -52,7 +52,7 @@ export default function LabOrderViewPage() {
         <Card className="shadow-sm md:col-span-2">
           <CardHeader className="bg-muted/20 border-b">
             <CardTitle className="text-primary text-lg">
-              Hitung Darah Lengkap
+              Complete Blood Count
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-6">
@@ -60,9 +60,9 @@ export default function LabOrderViewPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Parameter</TableHead>
-                  <TableHead>Rentang Referensi</TableHead>
-                  <TableHead>Nilai Hasil</TableHead>
-                  <TableHead>Satuan</TableHead>
+                  <TableHead>Reference Range</TableHead>
+                  <TableHead>Result Value</TableHead>
+                  <TableHead>Unit</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -77,7 +77,7 @@ export default function LabOrderViewPage() {
                   <TableCell className="text-muted-foreground">g/dL</TableCell>
                 </TableRow>
                 <TableRow>
-                  <TableCell className="font-medium">Leukosit</TableCell>
+                  <TableCell className="font-medium">Leukocytes</TableCell>
                   <TableCell className="text-muted-foreground text-sm">
                     4.5 - 11.0
                   </TableCell>
@@ -89,7 +89,7 @@ export default function LabOrderViewPage() {
                   </TableCell>
                 </TableRow>
                 <TableRow>
-                  <TableCell className="font-medium">Trombosit</TableCell>
+                  <TableCell className="font-medium">Platelets</TableCell>
                   <TableCell className="text-muted-foreground text-sm">
                     150 - 450
                   </TableCell>
@@ -104,9 +104,9 @@ export default function LabOrderViewPage() {
             </Table>
 
             <div className="mt-8 rounded-md border border-green-100 bg-green-50 p-4">
-              <p className="font-medium text-green-800">Status: Selesai</p>
+              <p className="font-medium text-green-800">Status: Completed</p>
               <p className="text-sm text-green-700">
-                Diverifikasi oleh: Dr. Spesialis Lab pada 2023-11-20 11:30
+                Verified by: Lab Specialist on 2023-11-20 11:30
               </p>
             </div>
           </CardContent>
@@ -116,31 +116,31 @@ export default function LabOrderViewPage() {
           <Card className="shadow-sm">
             <CardHeader className="bg-muted/20 border-b">
               <CardTitle className="text-primary text-lg">
-                Info Sampel
+                Sample Info
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 pt-6">
               <div className="space-y-1">
                 <p className="text-muted-foreground text-sm font-medium">
-                  Pasien
+                  Patient
                 </p>
                 <p className="font-medium">Alice Johnson</p>
               </div>
               <div className="space-y-1">
                 <p className="text-muted-foreground text-sm font-medium">
-                  Prioritas
+                  Priority
                 </p>
-                <Badge variant="outline">Rutin</Badge>
+                <Badge variant="outline">Routine</Badge>
               </div>
               <div className="space-y-1">
                 <p className="text-muted-foreground text-sm font-medium">
-                  Tipe Sampel
+                  Sample Type
                 </p>
-                <p className="font-medium">Darah Utuh (EDTA)</p>
+                <p className="font-medium">Whole Blood (EDTA)</p>
               </div>
               <div className="space-y-1">
                 <p className="text-muted-foreground text-sm font-medium">
-                  Diambil Pada
+                  Collected On
                 </p>
                 <p className="font-medium">2023-11-20 09:45</p>
               </div>

@@ -17,62 +17,116 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Visit, doctors, patients } from "@/data/mock-data";
+import { safeApiCall } from "@/lib/api-handler";
+import {
+  listClinicsApiClinicsGet,
+  listUsersApiUsersGet,
+} from "@/sdk/output/sdk.gen";
+import {
+  ClinicDto,
+  UserDao,
+  VisitDto,
+  VisitStatusEnum,
+  VisitTypeEnum,
+} from "@/sdk/output/types.gen";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 
 const visitSchema = z.object({
-  patient_id: z.string().min(1, "Pasien wajib diisi"),
-  doctor_id: z.string().min(1, "Dokter wajib diisi"),
-  clinic: z.string().min(1, "Klinik wajib diisi"),
-  visit_datetime: z.string().min(1, "Tanggal & Waktu wajib diisi"),
-  visit_type: z.enum(["general", "follow_up", "referral", "other"]),
-  status: z.string().optional(),
+  patient_id: z.string().uuid("Patient is required"),
+  doctor_id: z.string().uuid("Doctor is required"),
+  clinic_id: z.string().uuid("Clinic is required"),
+  visit_datetime: z.string().min(1, "Date & Time is required"),
+  visit_type: z.nativeEnum(VisitTypeEnum),
+  visit_status: z.nativeEnum(VisitStatusEnum).optional(),
+  chief_complaint: z.string().optional(),
 });
 
-type VisitFormValues = z.infer<typeof visitSchema>;
+export type VisitFormValues = z.infer<typeof visitSchema>;
 
 interface VisitFormProps {
-  initialData?: Visit;
-  onSubmit: (data: Partial<Visit>) => void;
+  initialData?: VisitDto;
+  onSubmit: (data: VisitFormValues) => void;
   onCancel: () => void;
+  isLoading?: boolean;
 }
 
-const clinics = [
-  "Klinik Umum",
-  "Klinik Gigi",
-  "Klinik Jantung",
-  "Klinik Anak",
-  "Klinik Ortopedi",
-  "Klinik Saraf",
-];
+export function VisitForm({
+  initialData,
+  onSubmit,
+  onCancel,
+  isLoading = false,
+}: VisitFormProps) {
+  const [patients, setPatients] = useState<UserDao[]>([]);
+  const [doctors, setDoctors] = useState<UserDao[]>([]);
+  const [clinics, setClinics] = useState<ClinicDto[]>([]);
+  const [isFetching, setIsFetching] = useState(true);
 
-export function VisitForm({ initialData, onSubmit, onCancel }: VisitFormProps) {
+  useEffect(() => {
+    const fetchOptions = async () => {
+      setIsFetching(true);
+      const [patientsRes, doctorsRes, clinicsRes] = await Promise.all([
+        safeApiCall(
+          listUsersApiUsersGet({
+            query: { roles: "patient", limit: 1000 },
+          })
+        ),
+        safeApiCall(
+          listUsersApiUsersGet({
+            query: { roles: "doctor", limit: 1000 },
+          })
+        ),
+        safeApiCall(listClinicsApiClinicsGet({ query: { limit: 100 } })),
+      ]);
+
+      if (patientsRes) setPatients(patientsRes);
+      if (doctorsRes) setDoctors(doctorsRes);
+      if (clinicsRes) setClinics(clinicsRes);
+      setIsFetching(false);
+    };
+
+    fetchOptions();
+  }, []);
+
   const form = useForm<VisitFormValues>({
     resolver: zodResolver(visitSchema),
     defaultValues: initialData
       ? {
           patient_id: initialData.patient_id,
           doctor_id: initialData.doctor_id,
-          clinic: initialData.clinic || "",
-          visit_datetime: initialData.visit_datetime,
+          clinic_id: initialData.clinic_id,
+          visit_datetime: initialData.visit_datetime?.substring(0, 16), // Format for datetime-local
           visit_type: initialData.visit_type,
-          status: initialData.status,
+          visit_status: initialData.visit_status,
+          chief_complaint: initialData.chief_complaint || "",
         }
       : {
           patient_id: "",
           doctor_id: "",
-          clinic: "",
+          clinic_id: "",
           visit_datetime: "",
-          visit_type: "general",
-          status: "Scheduled",
+          visit_type: VisitTypeEnum.GENERAL,
+          visit_status: VisitStatusEnum.REGISTERED, // Default status
+          chief_complaint: "",
         },
   });
 
   const handleSubmit = (data: VisitFormValues) => {
-    onSubmit(data);
+    // Ensure ISO format for date
+    const isoDate = new Date(data.visit_datetime).toISOString();
+    onSubmit({ ...data, visit_datetime: isoDate });
   };
+
+  if (isFetching) {
+    return (
+      <div className="flex h-40 items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <Form {...form}>
@@ -83,20 +137,20 @@ export function VisitForm({ initialData, onSubmit, onCancel }: VisitFormProps) {
             name="patient_id"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Pasien *</FormLabel>
+                <FormLabel>Patient *</FormLabel>
                 <Select
                   onValueChange={field.onChange}
                   defaultValue={field.value}
                 >
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Pilih pasien" />
+                      <SelectValue placeholder="Select patient" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
                     {patients.map(patient => (
                       <SelectItem key={patient.id} value={patient.id}>
-                        {patient.full_name} ({patient.medical_record_number})
+                        {patient.full_name} ({patient.username})
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -110,20 +164,20 @@ export function VisitForm({ initialData, onSubmit, onCancel }: VisitFormProps) {
             name="doctor_id"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Dokter *</FormLabel>
+                <FormLabel>Doctor *</FormLabel>
                 <Select
                   onValueChange={field.onChange}
                   defaultValue={field.value}
                 >
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Pilih dokter" />
+                      <SelectValue placeholder="Select doctor" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
                     {doctors.map(doctor => (
                       <SelectItem key={doctor.id} value={doctor.id}>
-                        {doctor.full_name} ({doctor.specialty})
+                        {doctor.full_name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -134,23 +188,23 @@ export function VisitForm({ initialData, onSubmit, onCancel }: VisitFormProps) {
           />
           <FormField
             control={form.control}
-            name="clinic"
+            name="clinic_id"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Klinik *</FormLabel>
+                <FormLabel>Clinic *</FormLabel>
                 <Select
                   onValueChange={field.onChange}
                   defaultValue={field.value}
                 >
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Pilih klinik" />
+                      <SelectValue placeholder="Select clinic" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
                     {clinics.map(clinic => (
-                      <SelectItem key={clinic} value={clinic}>
-                        {clinic}
+                      <SelectItem key={clinic.id} value={clinic.id}>
+                        {clinic.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -164,7 +218,7 @@ export function VisitForm({ initialData, onSubmit, onCancel }: VisitFormProps) {
             name="visit_datetime"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Tanggal & Waktu *</FormLabel>
+                <FormLabel>Date & Time *</FormLabel>
                 <FormControl>
                   <Input type="datetime-local" {...field} />
                 </FormControl>
@@ -177,21 +231,26 @@ export function VisitForm({ initialData, onSubmit, onCancel }: VisitFormProps) {
             name="visit_type"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Tipe Kunjungan</FormLabel>
+                <FormLabel>Visit Type</FormLabel>
                 <Select
                   onValueChange={field.onChange}
                   defaultValue={field.value}
                 >
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Pilih tipe kunjungan" />
+                      <SelectValue placeholder="Select type" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="general">Umum</SelectItem>
-                    <SelectItem value="follow_up">Tindak Lanjut</SelectItem>
-                    <SelectItem value="referral">Rujukan</SelectItem>
-                    <SelectItem value="other">Lainnya</SelectItem>
+                    {Object.values(VisitTypeEnum).map(type => (
+                      <SelectItem
+                        key={type}
+                        value={type}
+                        className="capitalize"
+                      >
+                        {type.replace(/_/g, " ")}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -200,7 +259,7 @@ export function VisitForm({ initialData, onSubmit, onCancel }: VisitFormProps) {
           />
           <FormField
             control={form.control}
-            name="status"
+            name="visit_status"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Status</FormLabel>
@@ -210,16 +269,19 @@ export function VisitForm({ initialData, onSubmit, onCancel }: VisitFormProps) {
                 >
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Pilih status" />
+                      <SelectValue placeholder="Select status" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="Scheduled">Terjadwal</SelectItem>
-                    <SelectItem value="In Progress">
-                      Sedang Berlangsung
-                    </SelectItem>
-                    <SelectItem value="Completed">Selesai</SelectItem>
-                    <SelectItem value="Canceled">Dibatalkan</SelectItem>
+                    {Object.values(VisitStatusEnum).map(status => (
+                      <SelectItem
+                        key={status}
+                        value={status}
+                        className="capitalize"
+                      >
+                        {status}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -228,11 +290,28 @@ export function VisitForm({ initialData, onSubmit, onCancel }: VisitFormProps) {
           />
         </div>
 
+        <FormField
+          control={form.control}
+          name="chief_complaint"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Chief Complaint</FormLabel>
+              <FormControl>
+                <Input placeholder="Optional complaint..." {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
         <div className="flex justify-end gap-4">
           <Button type="button" variant="outline" onClick={onCancel}>
-            Batal
+            Cancel
           </Button>
-          <Button type="submit">Simpan Janji Temu</Button>
+          <Button type="submit" disabled={isLoading}>
+            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Save Visit
+          </Button>
         </div>
       </form>
     </Form>

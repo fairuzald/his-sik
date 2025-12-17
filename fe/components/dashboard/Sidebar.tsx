@@ -139,7 +139,7 @@ export function Sidebar({ role, collapsible = true }: SidebarProps) {
               isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
             )}
           >
-            Keluar
+            Logout
           </span>
         </Button>
       </div>

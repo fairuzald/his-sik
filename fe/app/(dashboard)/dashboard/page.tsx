@@ -13,25 +13,25 @@ import Link from "next/link";
 
 const roles = [
   {
-    name: "Pasien",
+    name: "Patient",
     href: "/dashboard/patient",
     icon: User,
     color: "text-blue-500",
   },
   {
-    name: "Pendaftaran",
+    name: "Registration",
     href: "/dashboard/registration",
     icon: Users,
     color: "text-green-500",
   },
   {
-    name: "Dokter",
+    name: "Doctor",
     href: "/dashboard/doctor",
     icon: Stethoscope,
     color: "text-teal-500",
   },
   {
-    name: "Farmasi",
+    name: "Pharmacy",
     href: "/dashboard/pharmacy",
     icon: Pill,
     color: "text-purple-500",
@@ -43,7 +43,7 @@ const roles = [
     color: "text-red-500",
   },
   {
-    name: "Kasir",
+    name: "Cashier",
     href: "/dashboard/cashier",
     icon: CreditCard,
     color: "text-yellow-500",
@@ -61,9 +61,9 @@ export default function DashboardPage() {
     <div className="space-y-6">
       <div>
         <H1 className="text-3xl font-bold tracking-tight">
-          Selamat datang di MediCare
+          Welcome to MediCare
         </H1>
-        <Muted>Pilih peran untuk melihat dasbor.</Muted>
+        <Muted>Select a role to view its dashboard.</Muted>
       </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {roles.map(role => {
@@ -78,9 +78,9 @@ export default function DashboardPage() {
                   <Icon className={`h-4 w-4 ${role.color}`} />
                 </CardHeader>
                 <CardContent>
-                  <H3 className="text-2xl font-bold">Dasbor</H3>
+                  <H3 className="text-2xl font-bold">Dashboard</H3>
                   <Small className="text-muted-foreground">
-                    Akses portal {role.name}
+                    Access {role.name} portal
                   </Small>
                 </CardContent>
               </Card>

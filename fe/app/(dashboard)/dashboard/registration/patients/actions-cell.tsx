@@ -19,14 +19,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Patient } from "@/data/mock-data";
+import { UserDao } from "@/sdk/output/types.gen";
 import { MoreHorizontal } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
 interface PatientActionsCellProps {
-  patient: Patient;
-  onDelete: () => void;
+  patient: UserDao;
+  onDelete?: () => void;
 }
 
 export function PatientActionsCell({
@@ -38,7 +38,7 @@ export function PatientActionsCell({
   const handleDelete = () => {
     // In a real app, API call here
     console.log("Deleting patient:", patient.id);
-    onDelete();
+    if (onDelete) onDelete();
     setShowDeleteDialog(false);
   };
 
@@ -48,25 +48,27 @@ export function PatientActionsCell({
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" size="icon">
             <MoreHorizontal className="h-4 w-4" />
-            <span className="sr-only">Buka menu</span>
+            <span className="sr-only">Open menu</span>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuLabel>Aksi</DropdownMenuLabel>
+          <DropdownMenuLabel>Actions</DropdownMenuLabel>
           <DropdownMenuItem asChild>
             <Link href={`/dashboard/registration/patients/${patient.id}`}>
-              Lihat Detail
+              View Details
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
             <Link href={`/dashboard/registration/patients/${patient.id}/edit`}>
-              Edit Profil
+              Edit Profile
             </Link>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem asChild>
-            <Link href="/dashboard/registration/visits/new">
-              Buat Kunjungan
+            <Link
+              href={`/dashboard/registration/visits/new?patient_id=${patient.id}`}
+            >
+              Create Visit
             </Link>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
@@ -74,7 +76,7 @@ export function PatientActionsCell({
             className="text-destructive focus:text-destructive"
             onSelect={() => setShowDeleteDialog(true)}
           >
-            Hapus Pasien
+            Delete Patient
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -82,21 +84,21 @@ export function PatientActionsCell({
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Apakah Anda yakin?</AlertDialogTitle>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              Tindakan ini tidak dapat dibatalkan. Ini akan menghapus rekam
-              medis pasien secara permanen untuk{" "}
-              <strong>{patient.full_name}</strong> dan menghapus data mereka
-              dari server kami.
+              This action cannot be undone. This will permanently delete the
+              patient
+              <strong> {patient.full_name}</strong> and remove their data from
+              our servers.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               className="bg-destructive hover:bg-destructive/90"
             >
-              Hapus
+              Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

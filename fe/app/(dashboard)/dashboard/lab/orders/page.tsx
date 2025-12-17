@@ -5,87 +5,65 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataTable } from "@/components/ui/data-table";
+import { safeApiCall } from "@/lib/api-handler";
+import { listLabOrdersApiLabOrdersGet } from "@/sdk/output/sdk.gen";
+import { LabOrderDto } from "@/sdk/output/types.gen";
 import { ColumnDef } from "@tanstack/react-table";
-import { FlaskConical } from "lucide-react";
+import { format } from "date-fns";
+import { FlaskConical, Loader2 } from "lucide-react";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
-type LabOrder = {
-  id: string;
-  patient: string;
-  test: string;
-  priority: string;
-  status: string;
-  time: string;
-};
-
-const orders: LabOrder[] = [
+const columns: ColumnDef<LabOrderDto>[] = [
   {
-    id: "LAB-001",
-    patient: "Alice Johnson",
-    test: "CBC",
-    priority: "Rutin",
-    status: "Tertunda",
-    time: "09:30",
-  },
-  {
-    id: "LAB-002",
-    patient: "Bob Smith",
-    test: "Lipid Profile",
-    priority: "Mendesak",
-    status: "Sedang Diproses",
-    time: "10:00",
-  },
-  {
-    id: "LAB-003",
-    patient: "Charlie Brown",
-    test: "Urinalysis",
-    priority: "Rutin",
-    status: "Selesai",
-    time: "08:45",
-  },
-  {
-    id: "LAB-004",
-    patient: "Diana Prince",
-    test: "Blood Glucose",
-    priority: "Rutin",
-    status: "Tertunda",
-    time: "10:45",
-  },
-];
-
-const columns: ColumnDef<LabOrder>[] = [
-  { accessorKey: "time", header: "Waktu" },
-  { accessorKey: "id", header: "ID Pesanan" },
-  { accessorKey: "patient", header: "Pasien" },
-  { accessorKey: "test", header: "Tes" },
-  {
-    accessorKey: "priority",
-    header: "Prioritas",
+    accessorKey: "created_at",
+    header: "Time",
     cell: ({ row }) => (
-      <Badge
-        variant={
-          row.original.priority === "Mendesak" ? "destructive" : "outline"
-        }
-      >
-        {row.original.priority}
-      </Badge>
+      <span>{format(new Date(row.original.created_at), "p")}</span>
     ),
   },
   {
-    accessorKey: "status",
+    accessorKey: "id",
+    header: "Order ID",
+    cell: ({ row }) => (
+      <span className="font-mono text-xs">
+        {row.original.id.substring(0, 8)}...
+      </span>
+    ),
+  },
+  {
+    accessorKey: "visit.patient_id",
+    header: "Patient",
+    cell: ({ row }) => (
+      <span className="text-xs">
+        {row.original.visit?.patient_id
+          ? row.original.visit.patient_id.substring(0, 8) + "..."
+          : "-"}
+      </span>
+    ),
+  },
+  {
+    accessorKey: "lab_test.test_name",
+    header: "Test",
+    cell: ({ row }) => <span>{row.original.lab_test?.test_name || "-"}</span>,
+  },
+  {
+    accessorKey: "order_status",
     header: "Status",
     cell: ({ row }) => (
       <Badge
-        variant={row.original.status === "Selesai" ? "default" : "secondary"}
+        variant={
+          row.original.order_status === "completed" ? "default" : "secondary"
+        }
         className={
-          row.original.status === "Selesai"
+          row.original.order_status === "completed"
             ? "bg-green-500"
-            : row.original.status === "Sedang Diproses"
+            : row.original.order_status === "processing"
               ? "bg-blue-500 text-white"
               : ""
         }
       >
-        {row.original.status}
+        {row.original.order_status}
       </Badge>
     ),
   },
@@ -95,13 +73,15 @@ const columns: ColumnDef<LabOrder>[] = [
       <Button size="sm" variant="ghost" className="text-primary gap-2" asChild>
         <Link
           href={
-            row.original.status === "Selesai"
-              ? `/dashboard/lab/tests/${row.original.id}`
-              : `/dashboard/lab/tests/${row.original.id}/edit`
+            row.original.order_status === "completed"
+              ? `/dashboard/lab/orders/${row.original.id}`
+              : `/dashboard/lab/orders/${row.original.id}/edit`
           }
         >
           <FlaskConical className="h-3 w-3" />
-          {row.original.status === "Selesai" ? "Lihat Hasil" : "Proses"}
+          {row.original.order_status === "completed"
+            ? "View Results"
+            : "Process"}
         </Link>
       </Button>
     ),
@@ -109,33 +89,56 @@ const columns: ColumnDef<LabOrder>[] = [
 ];
 
 export default function LabOrdersPage() {
+  const [data, setData] = useState<LabOrderDto[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      const result = await safeApiCall(
+        listLabOrdersApiLabOrdersGet({ query: { limit: 100 } })
+      );
+      if (result && Array.isArray(result)) {
+        setData(result);
+      }
+      setIsLoading(false);
+    };
+    fetchData();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8 p-2">
       <div>
         <H2 className="text-primary text-3xl font-bold tracking-tight">
-          Pesanan Lab
+          Lab Orders
         </H2>
         <P className="text-muted-foreground mt-1">
-          Lihat dan proses permintaan tes laboratorium.
+          View and process laboratory test requests.
         </P>
       </div>
 
       <Card className="shadow-sm">
         <CardHeader className="bg-muted/20 border-b">
-          <CardTitle className="text-primary text-lg">
-            Antrean Pesanan
-          </CardTitle>
+          <CardTitle className="text-primary text-lg">Order Queue</CardTitle>
         </CardHeader>
         <CardContent className="pt-4">
           <DataTable
             columns={columns}
-            data={orders}
-            searchKey="patient"
-            filterKey="status"
+            data={data}
+            searchKey="id"
+            filterKey="order_status"
             filterOptions={[
-              { label: "Tertunda", value: "Tertunda" },
-              { label: "Sedang Diproses", value: "Sedang Diproses" },
-              { label: "Selesai", value: "Selesai" },
+              { label: "Pending", value: "pending" },
+              { label: "Processing", value: "processing" },
+              { label: "Completed", value: "completed" },
             ]}
           />
         </CardContent>
