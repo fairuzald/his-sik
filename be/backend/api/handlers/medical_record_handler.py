@@ -29,10 +29,10 @@ class MedicalRecordHandler(BaseHandler):
         self.profile_repository = ProfileRepository(session)
         self.repository = MedicalRecordRepository(session)
         self.visit_repository = VisitRepository(session)
-        self.usecase = MedicalRecordUseCase(self.repository, self.visit_repository)
+        self.usecase = MedicalRecordUseCase(self.repository, self.visit_repository, self.profile_repository)
 
     async def create_medical_record(self, req: MedicalRecordCreateDTO, profile: AuthenticatedProfile):
-        result = await self.usecase.create_medical_record(req, profile.id)
+        result = await self.usecase.create_medical_record(req, profile.user_id)
         return response_factory.success(data=MedicalRecordDTO.model_validate(result), message="Medical record created successfully")
 
     async def list_medical_records(
@@ -47,7 +47,7 @@ class MedicalRecordHandler(BaseHandler):
         records, total = await self.usecase.list_medical_records(
             page=page,
             limit=limit,
-            user_id=profile.id,
+            user_id=profile.user_id,
             role=profile.role,
             patient_id=patient_id,
             doctor_id=doctor_id,
@@ -61,13 +61,13 @@ class MedicalRecordHandler(BaseHandler):
         )
 
     async def get_medical_record(self, record_id: UUID, profile: AuthenticatedProfile):
-        result = await self.usecase.get_medical_record(record_id, profile.id, profile.role)
+        result = await self.usecase.get_medical_record(record_id, profile.user_id, profile.role)
         return response_factory.success(data=MedicalRecordDTO.model_validate(result))
 
     async def update_medical_record(self, record_id: UUID, req: MedicalRecordUpdateDTO, profile: AuthenticatedProfile):
-        result = await self.usecase.update_medical_record(record_id, req, profile.id)
+        result = await self.usecase.update_medical_record(record_id, req, profile.user_id)
         return response_factory.success(data=MedicalRecordDTO.model_validate(result), message="Medical record updated successfully")
 
     async def delete_medical_record(self, record_id: UUID, profile: AuthenticatedProfile):
-        await self.usecase.delete_medical_record(record_id, profile.id)
+        await self.usecase.delete_medical_record(record_id, profile.user_id)
         return response_factory.success(message="Medical record deleted successfully")

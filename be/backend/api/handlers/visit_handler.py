@@ -108,7 +108,7 @@ class VisitHandler(BaseHandler):
         profile: AuthenticatedProfile
     ):
         result = await self.usecase.update_visit(
-            visit_id, req, profile.id, profile.role
+            visit_id, req, profile.user_id, profile.role
         )
         return response_factory.success(
             data=VisitDTO.model_validate(result),

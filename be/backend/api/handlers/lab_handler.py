@@ -21,6 +21,9 @@ from backend.module.lab.repositories.lab_repository import (
     LabTestRepository,
 )
 from backend.module.lab.usecases.lab_usecase import LabUseCase
+from backend.module.profile.repositories.profile_repository import (
+    ProfileRepository,
+)
 from backend.module.visit.repositories.visit_repository import VisitRepository
 from backend.pkg.core.response import response_factory
 
@@ -31,7 +34,8 @@ class LabHandler(BaseHandler):
         self.test_repo = LabTestRepository(session)
         self.order_repo = LabOrderRepository(session)
         self.visit_repo = VisitRepository(session)
-        self.usecase = LabUseCase(self.test_repo, self.order_repo, self.visit_repo)
+        self.profile_repo = ProfileRepository(session)
+        self.usecase = LabUseCase(self.test_repo, self.order_repo, self.visit_repo, self.profile_repo)
 
     # --- Tests ---
     async def create_lab_test(self, req: LabTestCreateDTO, profile: AuthenticatedProfile):
@@ -63,11 +67,20 @@ class LabHandler(BaseHandler):
 
     # --- Orders ---
     async def create_lab_order(self, req: LabOrderCreateDTO, profile: AuthenticatedProfile):
-        result = await self.usecase.create_lab_order(req, profile.id)
+        result = await self.usecase.create_lab_order(req, profile.user_id)
         return response_factory.success(data=LabOrderDTO.model_validate(result), message="Lab order created")
 
-    async def list_lab_orders(self, profile: AuthenticatedProfile, page: int = 1, limit: int = 10, status: Optional[str] = None):
-        orders, total = await self.usecase.list_lab_orders(page, limit, profile.id, profile.role, status)
+    async def list_lab_orders(
+        self,
+        profile: AuthenticatedProfile,
+        page: int = 1,
+        limit: int = 10,
+        status: Optional[str] = None,
+        visit_id: Optional[UUID] = None
+    ):
+        orders, total = await self.usecase.list_lab_orders(
+            page, limit, profile.user_id, profile.role, status, visit_id
+        )
         return response_factory.success_list(
             data=[LabOrderDTO.model_validate(o) for o in orders],
             total=total,
@@ -76,11 +89,11 @@ class LabHandler(BaseHandler):
         )
 
     async def get_lab_order(self, order_id: UUID, profile: AuthenticatedProfile):
-        result = await self.usecase.get_lab_order(order_id, profile.id, profile.role)
+        result = await self.usecase.get_lab_order(order_id, profile.user_id, profile.role)
         return response_factory.success(data=LabOrderDTO.model_validate(result))
 
     async def update_lab_order(
         self, order_id: UUID, req: LabOrderUpdateStatusDTO, profile: AuthenticatedProfile
     ):
-        result = await self.usecase.update_lab_order(order_id, req, profile.id)
+        result = await self.usecase.update_lab_order(order_id, req, profile.user_id)
         return response_factory.success(data=LabOrderDTO.model_validate(result), message="Lab order updated")

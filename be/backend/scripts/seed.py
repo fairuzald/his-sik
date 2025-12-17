@@ -12,6 +12,7 @@ from backend.module.medicine.entity.medicine import Medicine
 from backend.module.profile.entity.models import Doctor, Patient, Staff
 from backend.module.session.models.session import UserSession  # noqa: F401
 from backend.module.user.entity.user import RoleEnum, User
+
 # Import models for SQLAlchemy relationship resolution
 from backend.module.visit.entity.visit import Visit  # noqa: F401
 from sqlalchemy import select
@@ -127,30 +128,91 @@ async def seed_data():
                 session.add(doctor_profile2)
                 logger.info("Seeded Doctor 2 with profile.")
 
-            # --- Staff + Profile ---
-            result = await session.execute(
-                select(User).where(User.username == "staff1")
-            )
-            if not result.scalars().first():
-                staff_user = User(
-                    id=uuid4(),
-                    username="staff1",
-                    full_name="Nurse Joy",
-                    email="staff@sik.com",
-                    password_hash=get_password_hash("staff123"),
-                    role=RoleEnum.STAFF,
-                    is_active=True,
-                    phone_number="081234567892"
-                )
-                session.add(staff_user)
-                await session.flush()
+            # --- Staff Members (one for each department) ---
+            staff_data = [
+                {
+                    "username": "staff_reg1",
+                    "full_name": "Siti Nurhaliza",
+                    "email": "registration@sik.com",
+                    "phone": "081234567892",
+                    "department": "Registration"
+                },
+                {
+                    "username": "staff_reg2",
+                    "full_name": "Ahmad Fauzi",
+                    "email": "registration2@sik.com",
+                    "phone": "081234567896",
+                    "department": "Registration"
+                },
+                {
+                    "username": "staff_pharmacy1",
+                    "full_name": "Dewi Kusuma",
+                    "email": "pharmacy@sik.com",
+                    "phone": "081234567897",
+                    "department": "Pharmacy"
+                },
+                {
+                    "username": "staff_pharmacy2",
+                    "full_name": "Budi Santoso",
+                    "email": "pharmacy2@sik.com",
+                    "phone": "081234567898",
+                    "department": "Pharmacy"
+                },
+                {
+                    "username": "staff_lab1",
+                    "full_name": "Rina Wijaya",
+                    "email": "laboratory@sik.com",
+                    "phone": "081234567899",
+                    "department": "Laboratory"
+                },
+                {
+                    "username": "staff_lab2",
+                    "full_name": "Hendra Gunawan",
+                    "email": "laboratory2@sik.com",
+                    "phone": "081234567800",
+                    "department": "Laboratory"
+                },
+                {
+                    "username": "staff_cashier1",
+                    "full_name": "Fitri Handayani",
+                    "email": "cashier@sik.com",
+                    "phone": "081234567801",
+                    "department": "Cashier"
+                },
+                {
+                    "username": "staff_cashier2",
+                    "full_name": "Rizki Pratama",
+                    "email": "cashier2@sik.com",
+                    "phone": "081234567802",
+                    "department": "Cashier"
+                }
+            ]
 
-                staff_profile = Staff(
-                    user_id=staff_user.id,
-                    department="Registration"
+            for staff_info in staff_data:
+                result = await session.execute(
+                    select(User).where(User.username == staff_info["username"])
                 )
-                session.add(staff_profile)
-                logger.info("Seeded Staff with profile.")
+                if not result.scalars().first():
+                    staff_user = User(
+                        id=uuid4(),
+                        username=staff_info["username"],
+                        full_name=staff_info["full_name"],
+                        email=staff_info["email"],
+                        password_hash=get_password_hash("staff123"),
+                        role=RoleEnum.STAFF,
+                        is_active=True,
+                        phone_number=staff_info["phone"]
+                    )
+                    session.add(staff_user)
+                    await session.flush()
+
+                    staff_profile = Staff(
+                        user_id=staff_user.id,
+                        department=staff_info["department"]
+                    )
+                    session.add(staff_profile)
+                    logger.info(f"Seeded {staff_info['department']} staff: {staff_info['full_name']}")
+
 
             # --- Patient 1 + Profile ---
             result = await session.execute(

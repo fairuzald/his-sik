@@ -60,7 +60,8 @@ class PrescriptionRepository:
         doctor_id: Optional[UUID] = None,
         patient_id: Optional[UUID] = None,
         status: Optional[str] = None,
-        search: Optional[str] = None
+        search: Optional[str] = None,
+        visit_id: Optional[UUID] = None
     ) -> Tuple[List[Prescription], int]:
         stmt = (
             select(Prescription)
@@ -76,6 +77,9 @@ class PrescriptionRepository:
 
         if patient_id:
             stmt = stmt.where(Visit.patient_id == patient_id)
+
+        if visit_id:
+            stmt = stmt.where(Prescription.visit_id == visit_id)
 
         if status:
             stmt = stmt.where(Prescription.prescription_status == status)

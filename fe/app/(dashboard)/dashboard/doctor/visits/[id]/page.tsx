@@ -1,24 +1,21 @@
 "use client";
 
+import { LabOrderTab } from "@/components/dashboard/doctor/visit-detail/LabOrderTab";
+import { MedicalRecordTab } from "@/components/dashboard/doctor/visit-detail/MedicalRecordTab";
+import { PrescriptionTab } from "@/components/dashboard/doctor/visit-detail/PrescriptionTab";
 import { WearableChart } from "@/components/dashboard/WearableChart";
 import { H2, P } from "@/components/elements/typography";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
 import { heartRateData, spo2Data } from "@/data/mock-data";
 import { safeApiCall } from "@/lib/api-handler";
 import {
-  createMedicalRecordApiMedicalRecordsPost,
   getVisitApiVisitsVisitIdGet,
   listLabOrdersApiLabOrdersGet,
   listLabTestsApiLabTestsGet,
   listMedicalRecordsApiMedicalRecordsGet,
   listPrescriptionsApiPrescriptionsGet,
-  updateMedicalRecordApiMedicalRecordsRecordIdPatch,
   updateVisitApiVisitsVisitIdPatch,
 } from "@/sdk/output/sdk.gen";
 import {
@@ -40,7 +37,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 export default function DoctorVisitDetailPage() {
   const params = useParams();
@@ -53,117 +50,60 @@ export default function DoctorVisitDetailPage() {
   );
   const [labTests, setLabTests] = useState<LabTestDto[]>([]);
   const [labOrders, setLabOrders] = useState<LabOrderDto[]>([]);
-  const [prescriptions, setPrescriptions] = useState<PrescriptionDto[]>([]); // Placeholder for now
+  const [prescriptions, setPrescriptions] = useState<PrescriptionDto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
 
-  // Form States for Medical Record
-  const [anamnesis, setAnamnesis] = useState("");
-  const [diagnosis, setDiagnosis] = useState("");
-  const [physicalExam, setPhysicalExam] = useState("");
-  const [plan, setPlan] = useState("");
+  const fetchAllData = useCallback(async () => {
+    if (!visitId) return;
 
-  useEffect(() => {
-    const fetchAllData = async () => {
-      if (!visitId) return;
+    // 1. Fetch Visit
+    const visitData = await safeApiCall(
+      getVisitApiVisitsVisitIdGet({
+        path: { visit_id: visitId },
+      })
+    );
+    if (visitData) setVisit(visitData);
 
-      // 1. Fetch Visit
-      const visitData = await safeApiCall(
-        getVisitApiVisitsVisitIdGet({
-          path: { visit_id: visitId },
-        })
-      );
-      if (visitData) setVisit(visitData);
+    // 2. Fetch Medical Record for this visit
+    const records = await safeApiCall(
+      listMedicalRecordsApiMedicalRecordsGet({
+        query: { visit_id: visitId, limit: 100 },
+      })
+    );
+    if (records) {
+      setMedicalRecord(records[0] || null);
+    }
 
-      // 2. Fetch Medical Record for this visit
-      // Since list filter by visit_id is not explicitly clear in SDK signature for `listMedicalRecordsApiMedicalRecordsGet` (it usually has query params),
-      // we might need to fetch all and filter or rely on the backend connection.
-      // Checking `ListMedicalRecordsApiMedicalRecordsGetData`: query params: page, limit, patient_id?
-      // If no visit_id filter, we might need `patient_id` from visit.
-      // Let's assume for now we might create one if none exists or fetch if we can.
-      // Ideally, the VisitDto would link it, or we fetch by patient.
-      // Let's try fetching by patient if we had patient ID. `visitData.patient_id`.
+    // 3. Fetch Lab Tests
+    const tests = await safeApiCall(listLabTestsApiLabTestsGet());
+    if (tests) setLabTests(tests);
 
-      const records = await safeApiCall(
-        listMedicalRecordsApiMedicalRecordsGet({
-          query: { limit: 100 }, // And potentially patient_id if we had it
-        })
-      );
-      if (records && visitData) {
-        const record = records.find(r => r.visit_id === visitId);
-        if (record) {
-          setMedicalRecord(record);
-          setAnamnesis(record.anamnesis || "");
-          setDiagnosis(record.diagnosis || "");
-          setPhysicalExam(record.physical_exam || "");
-          setPlan(record.treatment_plan || "");
-        }
-      }
+    // 4. Fetch Lab Orders
+    const orders = await safeApiCall(
+      listLabOrdersApiLabOrdersGet({
+        query: { visit_id: visitId, limit: 100 },
+      })
+    );
+    if (orders) {
+      setLabOrders(orders);
+    }
 
-      // 3. Fetch Lab Tests
-      const tests = await safeApiCall(listLabTestsApiLabTestsGet());
-      if (tests) setLabTests(tests);
+    // 5. Fetch Prescriptions
+    const prescs = await safeApiCall(
+      listPrescriptionsApiPrescriptionsGet({
+        query: { visit_id: visitId, limit: 100 },
+      })
+    );
+    if (prescs) {
+      setPrescriptions(prescs);
+    }
 
-      // 4. Fetch Lab Orders
-      const orders = await safeApiCall(listLabOrdersApiLabOrdersGet());
-      // Filter provided client side for now as SDK query param support for visit_id might be missing
-      if (orders && visitData) {
-        setLabOrders(orders.filter(o => o.visit_id === visitId));
-      }
-
-      // 5. Fetch Prescriptions
-      const prescs = await safeApiCall(listPrescriptionsApiPrescriptionsGet());
-      if (prescs && visitData) {
-        setPrescriptions(prescs.filter(p => p.visit_id === visitId));
-      }
-
-      setIsLoading(false);
-    };
-
-    fetchAllData();
+    setIsLoading(false);
   }, [visitId]);
 
-  const handleSaveRecord = async () => {
-    if (!visit) return;
-    setIsSaving(true);
-
-    try {
-      if (medicalRecord) {
-        // Update
-        await safeApiCall(
-          updateMedicalRecordApiMedicalRecordsRecordIdPatch({
-            path: { record_id: medicalRecord.id },
-            body: {
-              anamnesis,
-              diagnosis,
-              physical_exam: physicalExam,
-              treatment_plan: plan,
-              // outcome: medicalRecord.outcome // Keep existing or update
-            },
-          }),
-          { successMessage: "Medical record updated" }
-        );
-      } else {
-        // Create
-        const newRecord = await safeApiCall(
-          createMedicalRecordApiMedicalRecordsPost({
-            body: {
-              visit_id: visit.id,
-              anamnesis,
-              diagnosis,
-              physical_exam: physicalExam,
-              treatment_plan: plan,
-            },
-          }),
-          { successMessage: "Medical record created" }
-        );
-
-        if (newRecord) setMedicalRecord(newRecord);
-      }
-    } finally {
-      setIsSaving(false);
-    }
-  };
+  useEffect(() => {
+    fetchAllData();
+  }, [fetchAllData]);
 
   const handleFinishConsultation = async () => {
     if (!visit) return;
@@ -250,141 +190,28 @@ export default function DoctorVisitDetailPage() {
         </TabsList>
 
         <TabsContent value="record">
-          <Card className="shadow-sm">
-            <CardHeader className="bg-muted/20 border-b">
-              <CardTitle className="text-primary text-lg">
-                Clinical Notes
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6 p-6">
-              <div className="space-y-2">
-                <Label htmlFor="complaint">Anamnesis / Chief Complaint</Label>
-                <Textarea
-                  id="complaint"
-                  placeholder="Patient's chief complaint..."
-                  className="min-h-[80px]"
-                  value={anamnesis}
-                  onChange={e => setAnamnesis(e.target.value)}
-                />
-              </div>
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="diagnosis">Diagnosis</Label>
-                  <Input
-                    id="diagnosis"
-                    placeholder="ICD-10 or description"
-                    value={diagnosis}
-                    onChange={e => setDiagnosis(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Vitals (Physical Exam)</Label>
-                  <Textarea
-                    placeholder="BP, HR, Temp, Weight, etc."
-                    value={physicalExam}
-                    onChange={e => setPhysicalExam(e.target.value)}
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="plan">Treatment Plan</Label>
-                <Textarea
-                  id="plan"
-                  placeholder="Action plan, medication strategy..."
-                  value={plan}
-                  onChange={e => setPlan(e.target.value)}
-                />
-              </div>
-              <Button onClick={handleSaveRecord} disabled={isSaving}>
-                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Save Record
-              </Button>
-            </CardContent>
-          </Card>
+          <MedicalRecordTab
+            visitId={visitId}
+            medicalRecord={medicalRecord}
+            onUpdate={setMedicalRecord}
+          />
         </TabsContent>
 
         <TabsContent value="prescription">
-          <Card className="shadow-sm">
-            <CardHeader className="bg-muted/20 flex flex-row items-center justify-between border-b">
-              <CardTitle className="text-primary text-lg">
-                e-Prescription
-              </CardTitle>
-              <Button size="sm" variant="secondary" disabled>
-                Add Medicine (Coming Soon)
-              </Button>
-            </CardHeader>
-            <CardContent className="space-y-4 p-6">
-              {prescriptions.length === 0 ? (
-                <p className="text-muted-foreground text-sm">
-                  No prescriptions found.
-                </p>
-              ) : (
-                <ul className="list-disc pl-5">
-                  {prescriptions.map(p => (
-                    <li key={p.id}>
-                      Prescription ID: {p.id} - Status: {p.prescription_status}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
+          <PrescriptionTab
+            visitId={visitId}
+            prescriptions={prescriptions}
+            onRefresh={fetchAllData}
+          />
         </TabsContent>
 
         <TabsContent value="labs">
-          <Card className="shadow-sm">
-            <CardHeader className="bg-muted/20 border-b">
-              <CardTitle className="text-primary text-lg">Lab Orders</CardTitle>
-            </CardHeader>
-            <CardContent className="p-6">
-              <div className="mb-4">
-                <H2 className="text-base font-semibold">Existing Orders</H2>
-                {labOrders.length === 0 ? (
-                  <p className="text-muted-foreground text-sm">
-                    No lab orders found.
-                  </p>
-                ) : (
-                  <ul className="list-disc pl-5">
-                    {labOrders.map(o => (
-                      <li key={o.id}>
-                        Test:{" "}
-                        {labTests.find(t => t.id === o.lab_test_id)
-                          ?.test_name || o.lab_test_id}{" "}
-                        - Status: {o.order_status}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-
-              <div className="mt-8">
-                <H2 className="mb-2 text-base font-semibold">
-                  Available Tests
-                </H2>
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  {labTests.map(test => (
-                    <div
-                      key={test.id}
-                      className="hover:bg-muted/50 flex cursor-pointer items-center space-x-2 rounded-md border p-3"
-                    >
-                      <Input
-                        type="checkbox"
-                        id={test.id}
-                        className="h-4 w-4"
-                        disabled
-                      />
-                      <Label
-                        htmlFor={test.id}
-                        className="flex-1 cursor-pointer"
-                      >
-                        {test.test_name} ({test.category})
-                      </Label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <LabOrderTab
+            visitId={visitId}
+            labOrders={labOrders}
+            labTests={labTests}
+            onRefresh={fetchAllData}
+          />
         </TabsContent>
 
         <TabsContent value="wearables">

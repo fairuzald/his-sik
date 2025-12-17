@@ -42,11 +42,12 @@ async def list_prescriptions(
     limit: int = 10,
     search: Optional[str] = None,
     status: Optional[str] = None,
+    visit_id: Optional[UUID] = None,
     profile: AuthenticatedProfile = Depends(get_current_profile),
     handler: PrescriptionHandler = Depends()
 ):
     """List prescriptions. Filtered by role."""
-    return await handler.list_prescriptions(profile, page, limit, search, status)
+    return await handler.list_prescriptions(profile, page, limit, search, status, visit_id)
 
 
 @router.get("/{prescription_id}", response_model=ApiResponse[PrescriptionDTO])
