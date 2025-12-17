@@ -10,12 +10,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Visit } from "@/data/mock-data";
+import { VisitDto } from "@/sdk/output/types.gen";
 import { ColumnDef } from "@tanstack/react-table";
+import { format } from "date-fns";
 import { ArrowUpDown, MoreHorizontal } from "lucide-react";
 import Link from "next/link";
 
-export const columns: ColumnDef<Visit>[] = [
+export const columns: ColumnDef<VisitDto>[] = [
   {
     accessorKey: "visit_datetime",
     header: ({ column }) => {
@@ -24,33 +25,41 @@ export const columns: ColumnDef<Visit>[] = [
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
-          Tanggal
+          Date
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );
     },
+    cell: ({ row }) => {
+      const date = new Date(row.original.visit_datetime || "");
+      return <span className="pl-4">{format(date, "MMM dd, yyyy HH:mm")}</span>;
+    },
+  },
+  {
+    accessorKey: "patient_id",
+    header: "Patient ID",
     cell: ({ row }) => (
-      <span className="pl-4">{row.original.visit_datetime}</span>
+      <span className="font-mono text-xs">
+        {row.original.patient_id.substring(0, 8)}...
+      </span>
     ),
   },
   {
-    accessorKey: "patient_name",
-    header: "Pasien",
-  },
-  {
     accessorKey: "visit_type",
-    header: "Tipe",
+    header: "Type",
+    cell: ({ row }) => (
+      <span className="capitalize">
+        {row.original.visit_type?.replace(/_/g, " ")}
+      </span>
+    ),
   },
   {
-    accessorKey: "status",
+    accessorKey: "visit_status",
     header: "Status",
     cell: ({ row }) => {
-      const status = row.getValue("status") as string;
+      const status = row.original.visit_status;
       return (
-        <Badge
-          variant="secondary"
-          className="bg-green-100 text-green-800 hover:bg-green-200"
-        >
+        <Badge variant="secondary" className="">
           {status}
         </Badge>
       );
@@ -65,21 +74,21 @@ export const columns: ColumnDef<Visit>[] = [
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="h-8 w-8 p-0">
-              <span className="sr-only">Buka menu</span>
+              <span className="sr-only">Open menu</span>
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Aksi</DropdownMenuLabel>
+            <DropdownMenuLabel>Actions</DropdownMenuLabel>
             <DropdownMenuItem
               onClick={() => navigator.clipboard.writeText(visit.id)}
             >
-              Salin ID Kunjungan
+              Copy Visit ID
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
               <Link href={`/dashboard/doctor/visits/${visit.id}`}>
-                Lihat Detail
+                View Details
               </Link>
             </DropdownMenuItem>
           </DropdownMenuContent>

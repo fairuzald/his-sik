@@ -5,89 +5,122 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { DataTable } from "@/components/ui/data-table";
-import { Invoice, invoices } from "@/data/mock-data";
+import { safeApiCall } from "@/lib/api-handler";
+import { listInvoicesApiInvoicesGet } from "@/sdk/output/sdk.gen";
+import { InvoiceDto } from "@/sdk/output/types.gen";
 import { ColumnDef } from "@tanstack/react-table";
-import { Download } from "lucide-react";
+import { format } from "date-fns";
+import { Download, Loader2 } from "lucide-react";
 import Link from "next/link";
-
-const columns: ColumnDef<Invoice>[] = [
-  {
-    accessorKey: "invoice_datetime",
-    header: "Date",
-    cell: ({ row }) => (
-      <span className="pl-4">{row.original.invoice_datetime}</span>
-    ),
-  },
-  {
-    accessorKey: "invoice_number",
-    header: "Invoice ID",
-    cell: ({ row }) => (
-      <span className="font-mono">{row.original.invoice_number}</span>
-    ),
-  },
-  {
-    id: "items",
-    header: "Items",
-    cell: ({ row }) => {
-      const items = row.original.items.map(item => item.description).join(", ");
-      return (
-        <span className="block max-w-[200px] truncate" title={items}>
-          {items}
-        </span>
-      );
-    },
-  },
-  {
-    accessorKey: "total_amount",
-    header: "Amount",
-    cell: ({ row }) => (
-      <span className="font-medium">
-        Rp {row.original.total_amount.toLocaleString("id-ID")}
-      </span>
-    ),
-  },
-  {
-    accessorKey: "status",
-    header: "Status",
-    cell: ({ row }) => (
-      <Badge
-        variant={
-          row.original.status === "Paid"
-            ? "default"
-            : row.original.status === "Pending"
-              ? "destructive"
-              : "secondary"
-        }
-      >
-        {row.original.status}
-      </Badge>
-    ),
-  },
-  {
-    id: "actions",
-    cell: ({ row }) => (
-      <div className="flex justify-end gap-2 pr-4">
-        <Button size="sm" variant="ghost" asChild>
-          <Link href={`/dashboard/patient/billing/${row.original.id}`}>
-            View Details
-          </Link>
-        </Button>
-        <Button size="sm" variant="ghost">
-          <Download className="h-4 w-4" />
-        </Button>
-      </div>
-    ),
-  },
-];
-
-const filterOptions = [
-  { label: "Paid", value: "Paid" },
-  { label: "Pending", value: "Pending" },
-  { label: "Unpaid", value: "Unpaid" },
-  { label: "Canceled", value: "Canceled" },
-];
+import { useEffect, useState } from "react";
+// removed toast import
 
 export default function PatientBillingPage() {
+  const [data, setData] = useState<InvoiceDto[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const result = await safeApiCall(listInvoicesApiInvoicesGet(), {
+        errorMessage: "Failed to load invoices",
+      });
+      if (result) {
+        setData(result);
+      }
+      setIsLoading(false);
+    };
+    fetchData();
+  }, []);
+
+  const columns: ColumnDef<InvoiceDto>[] = [
+    {
+      accessorKey: "created_at",
+      header: "Issued Date",
+      cell: ({ row }) => (
+        <span className="pl-4">
+          {row.original.created_at
+            ? format(new Date(row.original.created_at), "dd MMM yyyy")
+            : "-"}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "id",
+      header: "Invoice ID",
+      cell: ({ row }) => (
+        <span className="font-mono text-xs">
+          {row.original.id.substring(0, 8)}...
+        </span>
+      ),
+    },
+    {
+      // We assume description or items might be fetched in details,
+      // or we check if items are returned in list.
+      // InvoiceDto usually has items array.
+      id: "items", // Virtual column if items exist
+      header: "Items (Count)",
+      cell: ({ row }) => {
+        const count = row.original.items?.length || 0;
+        return <span>{count} Items</span>;
+      },
+    },
+    {
+      accessorKey: "total_amount",
+      header: "Amount",
+      cell: ({ row }) => (
+        <span className="font-medium">
+          Rp {row.original.total_amount.toLocaleString("id-ID")}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "payment_status",
+      header: "Status",
+      cell: ({ row }) => {
+        const status = row.original.payment_status;
+        let variant: "default" | "destructive" | "secondary" = "secondary";
+        if (status === "paid") variant = "default";
+        if (status === "unpaid") variant = "destructive";
+
+        return (
+          <Badge variant={variant} className="capitalize">
+            {status}
+          </Badge>
+        );
+      },
+    },
+    {
+      id: "actions",
+      cell: ({ row }) => (
+        <div className="flex justify-end gap-2 pr-4">
+          <Button size="sm" variant="ghost" asChild>
+            <Link href={`/dashboard/patient/billing/${row.original.id}`}>
+              View Details
+            </Link>
+          </Button>
+          <Button size="sm" variant="ghost" disabled>
+            <Download className="h-4 w-4" />
+          </Button>
+        </div>
+      ),
+    },
+  ];
+
+  const filterOptions = [
+    { label: "Paid", value: "paid" },
+    { label: "Pending", value: "pending" },
+    { label: "Unpaid", value: "unpaid" },
+    { label: "Failed", value: "failed" },
+  ];
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8 p-2">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -105,9 +138,9 @@ export default function PatientBillingPage() {
         <CardContent>
           <DataTable
             columns={columns}
-            data={invoices}
-            searchKey="invoice_number"
-            filterKey="status"
+            data={data}
+            searchKey="id"
+            filterKey="payment_status"
             filterOptions={filterOptions}
           />
         </CardContent>

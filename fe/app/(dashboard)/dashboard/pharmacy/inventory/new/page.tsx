@@ -6,18 +6,37 @@ import {
   MedicineFormValues,
 } from "@/components/forms/medicine-form";
 import { Button } from "@/components/ui/button";
+import { safeApiCall } from "@/lib/api-handler";
+import { createMedicineApiMedicinesPost } from "@/sdk/output/sdk.gen";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { useState } from "react";
 
 export default function NewMedicinePage() {
   const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (data: MedicineFormValues) => {
-    console.log("Creating medicine:", data);
-    toast.success("Obat berhasil dibuat");
-    router.push("/dashboard/pharmacy/inventory");
+  const handleSubmit = async (data: MedicineFormValues) => {
+    setIsSubmitting(true);
+    const result = await safeApiCall(
+      createMedicineApiMedicinesPost({
+        body: {
+          medicine_code: data.medicine_code,
+          medicine_name: data.medicine_name,
+          unit: data.unit || null,
+          unit_price: parseFloat(data.unit_price) || 0,
+          is_active: data.is_active,
+        },
+      }),
+      { successMessage: "Medicine created successfully" }
+    );
+
+    setIsSubmitting(false);
+
+    if (result) {
+      router.push("/dashboard/pharmacy/inventory");
+    }
   };
 
   return (
@@ -30,16 +49,20 @@ export default function NewMedicinePage() {
         </Button>
         <div>
           <H2 className="text-primary text-2xl font-bold tracking-tight">
-            Tambah Obat Baru
+            Add New Medicine
           </H2>
           <P className="text-muted-foreground text-sm">
-            Tambahkan obat baru ke inventaris.
+            Add a new medicine to the inventory.
           </P>
         </div>
       </div>
 
       <div className="w-full">
-        <MedicineForm onSubmit={handleSubmit} onCancel={() => router.back()} />
+        <MedicineForm
+          onSubmit={handleSubmit}
+          onCancel={() => router.back()}
+          isLoading={isSubmitting}
+        />
       </div>
     </div>
   );

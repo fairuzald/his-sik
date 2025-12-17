@@ -6,26 +6,78 @@ import {
   MedicineFormValues,
 } from "@/components/forms/medicine-form";
 import { Button } from "@/components/ui/button";
-import { medicines } from "@/data/mock-data";
-import { ArrowLeft } from "lucide-react";
+import { safeApiCall } from "@/lib/api-handler";
+import {
+  getMedicineApiMedicinesMedicineIdGet,
+  updateMedicineApiMedicinesMedicineIdPut,
+} from "@/sdk/output/sdk.gen";
+import { MedicineDto } from "@/sdk/output/types.gen";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { useEffect, useState } from "react";
 
 export default function EditMedicinePage() {
   const router = useRouter();
   const params = useParams();
-  const medicine = medicines.find(m => m.id === params.id);
+  const [medicine, setMedicine] = useState<MedicineDto | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  if (!medicine) {
-    return <div>Obat tidak ditemukan</div>;
+  useEffect(() => {
+    const fetchMedicine = async () => {
+      setIsLoading(true);
+      if (typeof params.id === "string") {
+        const result = await safeApiCall(
+          getMedicineApiMedicinesMedicineIdGet({
+            path: { medicine_id: params.id },
+          })
+        );
+        if (result) {
+          setMedicine(result);
+        }
+      }
+      setIsLoading(false);
+    };
+    fetchMedicine();
+  }, [params.id]);
+
+  const handleSubmit = async (data: MedicineFormValues) => {
+    if (typeof params.id !== "string") return;
+    setIsSubmitting(true);
+
+    const result = await safeApiCall(
+      updateMedicineApiMedicinesMedicineIdPut({
+        path: { medicine_id: params.id },
+        body: {
+          medicine_code: data.medicine_code,
+          medicine_name: data.medicine_name,
+          unit: data.unit || null,
+          unit_price: parseFloat(data.unit_price) || 0,
+          is_active: data.is_active,
+        },
+      }),
+      { successMessage: "Medicine updated successfully" }
+    );
+
+    setIsSubmitting(false);
+
+    if (result) {
+      router.push("/dashboard/pharmacy/inventory");
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
   }
 
-  const handleSubmit = (data: MedicineFormValues) => {
-    console.log("Updating medicine:", data);
-    toast.success("Obat berhasil diperbarui");
-    router.push("/dashboard/pharmacy/inventory");
-  };
+  if (!medicine) {
+    return <div>Medicine not found</div>;
+  }
 
   return (
     <div className="flex flex-col space-y-6 p-6">
@@ -37,10 +89,10 @@ export default function EditMedicinePage() {
         </Button>
         <div>
           <H2 className="text-primary text-2xl font-bold tracking-tight">
-            Ubah Obat
+            Edit Medicine
           </H2>
           <P className="text-muted-foreground text-sm">
-            Perbarui informasi obat.
+            Update medicine information.
           </P>
         </div>
       </div>
@@ -50,6 +102,7 @@ export default function EditMedicinePage() {
           initialData={medicine}
           onSubmit={handleSubmit}
           onCancel={() => router.back()}
+          isLoading={isSubmitting}
         />
       </div>
     </div>

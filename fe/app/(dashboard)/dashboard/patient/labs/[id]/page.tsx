@@ -4,46 +4,70 @@ import { H2, P, Small } from "@/components/elements/typography";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DataTable } from "@/components/ui/data-table";
-import { LabResult, labOrders } from "@/data/mock-data";
-import { ColumnDef } from "@tanstack/react-table";
-import { Activity, ArrowLeft, Calendar, Download, User } from "lucide-react";
+import { safeApiCall } from "@/lib/api-handler";
+import {
+  getLabOrderApiLabOrdersOrderIdGet,
+  getLabTestApiLabTestsTestIdGet,
+} from "@/sdk/output/sdk.gen";
+import { LabOrderDto } from "@/sdk/output/types.gen";
+import { format } from "date-fns";
+import {
+  Activity,
+  ArrowLeft,
+  Calendar,
+  Download,
+  Loader2,
+  User,
+} from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-
-const columns: ColumnDef<LabResult>[] = [
-  {
-    accessorKey: "result_text",
-    header: "Result",
-    cell: ({ row }) => (
-      <span className="font-medium">
-        {row.original.result_text || "Result Available"}
-      </span>
-    ),
-  },
-  {
-    accessorKey: "result_value_numeric",
-    header: "Value",
-    cell: ({ row }) => (
-      <span className="font-semibold">
-        {row.original.result_value_numeric || "-"}
-      </span>
-    ),
-  },
-  {
-    accessorKey: "result_unit",
-    header: "Unit",
-    cell: ({ row }) => (
-      <span className="text-muted-foreground">
-        {row.original.result_unit || "-"}
-      </span>
-    ),
-  },
-];
+import { useEffect, useState } from "react";
+// removed toast import
 
 export default function LabDetailPage() {
   const params = useParams();
-  const lab = labOrders.find(l => l.id === params.id) || labOrders[0]; // Fallback
+  const id = params.id as string;
+  const [lab, setLab] = useState<LabOrderDto | null>(null);
+  const [testName, setTestName] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchLab = async () => {
+      const labData = await safeApiCall(
+        getLabOrderApiLabOrdersOrderIdGet({
+          path: { order_id: id },
+        }),
+        {
+          errorMessage: "Failed to load lab results",
+        }
+      );
+
+      if (labData) {
+        setLab(labData);
+
+        // Fetch Test Name
+        if (labData.lab_test_id) {
+          safeApiCall(
+            getLabTestApiLabTestsTestIdGet({
+              path: { test_id: labData.lab_test_id },
+            })
+          ).then(res => {
+            if (res) setTestName(res.test_name);
+          });
+        }
+      }
+      setIsLoading(false);
+    };
+    if (id) fetchLab();
+  }, [id]);
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   if (!lab) return <div>Lab order not found</div>;
 
@@ -69,35 +93,41 @@ export default function LabDetailPage() {
             <div className="flex items-center gap-2">
               <Activity className="text-primary h-5 w-5" />
               <CardTitle className="text-primary text-lg">
-                {lab.test_name}
+                {testName || "Unknown Test"}
               </CardTitle>
             </div>
-            <Badge variant="outline" className="bg-background">
-              {lab.status}
+            <Badge variant="outline" className="bg-background capitalize">
+              {lab.order_status}
             </Badge>
           </CardHeader>
           <CardContent className="pt-6">
-            {lab.result ? (
-              <>
-                <DataTable
-                  columns={columns}
-                  data={[lab.result]}
-                  searchKey="result_text"
-                />
-                <div className="bg-muted/10 mt-6 rounded-md border p-4">
-                  <Small className="text-primary font-semibold">
-                    Interpretation
-                  </Small>
-                  <P className="text-muted-foreground mt-1 text-sm">
-                    {lab.result.interpretation || "No interpretation provided."}
-                  </P>
-                </div>
-              </>
-            ) : (
-              <div className="text-muted-foreground py-6 text-center">
-                Result pending or not available.
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-muted/10 rounded-lg p-4">
+                <Small className="text-muted-foreground mb-1 block">
+                  Result (Text/Value)
+                </Small>
+                <P className="text-lg font-semibold">
+                  {lab.result?.result_value || "-"}
+                </P>
               </div>
-            )}
+              <div className="bg-muted/10 rounded-lg p-4">
+                <Small className="text-muted-foreground mb-1 block">Unit</Small>
+                <P className="text-lg font-semibold">
+                  {lab.result?.result_unit || "-"}
+                </P>
+              </div>
+            </div>
+
+            <div className="bg-muted/10 mt-6 rounded-md border p-4">
+              <Small className="text-primary font-semibold">
+                Interpretation / Notes
+              </Small>
+              <P className="text-muted-foreground mt-1 text-sm">
+                {lab.result?.interpretation ||
+                  lab.notes ||
+                  "No interpretation provided."}
+              </P>
+            </div>
           </CardContent>
         </Card>
 
@@ -111,22 +141,26 @@ export default function LabDetailPage() {
                 <User className="text-muted-foreground mt-0.5 h-5 w-5" />
                 <div>
                   <Small className="text-muted-foreground">Ordered By</Small>
-                  <P className="font-medium">{lab.doctor_name}</P>
+                  <P className="font-mono text-xs font-medium">
+                    {lab.doctor_id || "Unknown"}
+                  </P>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <Calendar className="text-muted-foreground mt-0.5 h-5 w-5" />
                 <div>
-                  <Small className="text-muted-foreground">
-                    Date Performed
-                  </Small>
-                  <P className="font-medium">{lab.request_datetime}</P>
+                  <Small className="text-muted-foreground">Date Created</Small>
+                  <P className="font-medium">
+                    {lab.created_at
+                      ? format(new Date(lab.created_at), "dd MMM yyyy HH:mm")
+                      : "Pending"}
+                  </P>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Button className="mt-4 w-full gap-2">
+          <Button className="mt-4 w-full gap-2" variant="outline" disabled>
             <Download className="h-4 w-4" />
             Download Report
           </Button>

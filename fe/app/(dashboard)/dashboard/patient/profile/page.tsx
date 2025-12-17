@@ -11,11 +11,52 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { patientProfile } from "@/data/mock-data";
-import { Edit } from "lucide-react";
+import { getMyProfileApiProfileMeGet } from "@/sdk/output/sdk.gen";
+import { PatientProfileDao, UserProfileDao } from "@/sdk/output/types.gen";
+import { Edit, Loader2 } from "lucide-react";
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 export default function PatientProfilePage() {
+  const [profile, setProfile] = useState<UserProfileDao | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const response = await getMyProfileApiProfileMeGet();
+        if (response.data?.success && response.data.data) {
+          setProfile(response.data.data);
+        } else {
+          // If failed, maybe redirect to login? handled by auth guard usually
+          toast.error("Failed to load profile");
+        }
+      } catch (error) {
+        console.error(error);
+        toast.error("Error loading profile");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchProfile();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return <div>Profile not found.</div>;
+  }
+
+  // Cast details to PatientProfileDao safely if role is patient
+  const patientDetails = profile.details as PatientProfileDao | undefined;
+
   return (
     <div className="space-y-8 p-2">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -40,18 +81,22 @@ export default function PatientProfilePage() {
           <CardHeader className="pb-2 text-center">
             <div className="relative mx-auto mb-4 h-32 w-32">
               <Avatar className="border-muted h-full w-full border-4">
-                <AvatarImage src="/avatars/01.png" alt={patientProfile.name} />
+                <AvatarImage
+                  src={profile.photo_url || ""}
+                  alt={profile.full_name}
+                />
                 <AvatarFallback className="bg-primary/10 text-primary text-4xl">
-                  {patientProfile.name
+                  {profile.full_name
                     .split(" ")
                     .map(n => n[0])
-                    .join("")}
+                    .join("")
+                    .substring(0, 2)}
                 </AvatarFallback>
               </Avatar>
             </div>
-            <CardTitle className="text-2xl">{patientProfile.name}</CardTitle>
+            <CardTitle className="text-2xl">{profile.full_name}</CardTitle>
             <CardDescription className="text-primary font-medium">
-              Patient ID: {patientProfile.id}
+              @{profile.username}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6 pt-6">
@@ -59,21 +104,21 @@ export default function PatientProfilePage() {
               <Muted className="text-xs font-semibold uppercase tracking-wider">
                 Email
               </Muted>
-              <P className="text-sm font-medium">{patientProfile.email}</P>
+              <P className="text-sm font-medium">{profile.email || "-"}</P>
             </div>
             <div className="grid gap-1 text-center">
               <Muted className="text-xs font-semibold uppercase tracking-wider">
                 Phone
               </Muted>
-              <P className="text-sm font-medium">{patientProfile.phone}</P>
+              <P className="text-sm font-medium">
+                {profile.phone_number || "-"}
+              </P>
             </div>
             <div className="grid gap-1 text-center">
               <Muted className="text-xs font-semibold uppercase tracking-wider">
-                Member Since
+                Role
               </Muted>
-              <P className="text-sm font-medium">
-                {patientProfile.memberSince}
-              </P>
+              <P className="text-sm font-medium capitalize">{profile.role}</P>
             </div>
           </CardContent>
         </Card>
@@ -93,39 +138,35 @@ export default function PatientProfilePage() {
                 <div className="space-y-2">
                   <Label className="text-muted-foreground">NIK</Label>
                   <div className="bg-muted/30 rounded-md border p-2 font-medium">
-                    {patientProfile.nik}
+                    {patientDetails?.nik || "-"}
                   </div>
                 </div>
                 <div className="space-y-2">
                   <Label className="text-muted-foreground">BPJS Number</Label>
                   <div className="bg-muted/30 rounded-md border p-2 font-medium">
-                    {patientProfile.bpjs}
+                    {patientDetails?.bpjs_number || "-"}
                   </div>
                 </div>
                 <div className="space-y-2">
                   <Label className="text-muted-foreground">Birth Date</Label>
                   <div className="bg-muted/30 rounded-md border p-2 font-medium">
-                    {patientProfile.birthDate}
+                    {patientDetails?.date_of_birth || "-"}
                   </div>
                 </div>
                 <div className="space-y-2">
                   <Label className="text-muted-foreground">Gender</Label>
                   <div className="bg-muted/30 rounded-md border p-2 font-medium">
-                    {patientProfile.gender}
+                    {patientDetails?.gender === "L"
+                      ? "Male"
+                      : patientDetails?.gender === "P"
+                        ? "Female"
+                        : patientDetails?.gender || "-"}
                   </div>
                 </div>
                 <div className="space-y-2">
                   <Label className="text-muted-foreground">Blood Type</Label>
                   <div className="bg-muted/30 rounded-md border p-2 font-medium">
-                    {patientProfile.bloodType}
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-muted-foreground">
-                    Marital Status
-                  </Label>
-                  <div className="bg-muted/30 rounded-md border p-2 font-medium">
-                    {patientProfile.maritalStatus}
+                    {patientDetails?.blood_type || "-"}
                   </div>
                 </div>
               </div>
@@ -143,27 +184,7 @@ export default function PatientProfilePage() {
               <div className="space-y-2">
                 <Label className="text-muted-foreground">Full Address</Label>
                 <div className="bg-muted/30 rounded-md border p-2 font-medium">
-                  {patientProfile.address}
-                </div>
-              </div>
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-                <div className="space-y-2">
-                  <Label className="text-muted-foreground">City</Label>
-                  <div className="bg-muted/30 rounded-md border p-2 font-medium">
-                    {patientProfile.city}
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-muted-foreground">Province</Label>
-                  <div className="bg-muted/30 rounded-md border p-2 font-medium">
-                    {patientProfile.province}
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-muted-foreground">Postal Code</Label>
-                  <div className="bg-muted/30 rounded-md border p-2 font-medium">
-                    {patientProfile.postalCode}
-                  </div>
+                  {patientDetails?.address || "-"}
                 </div>
               </div>
             </CardContent>
@@ -179,23 +200,17 @@ export default function PatientProfilePage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label className="text-muted-foreground">Name</Label>
                   <div className="bg-muted/30 rounded-md border p-2 font-medium">
-                    {patientProfile.emergencyContact.name}
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-muted-foreground">Relationship</Label>
-                  <div className="bg-muted/30 rounded-md border p-2 font-medium">
-                    {patientProfile.emergencyContact.relationship}
+                    {patientDetails?.emergency_contact_name || "-"}
                   </div>
                 </div>
                 <div className="space-y-2">
                   <Label className="text-muted-foreground">Phone Number</Label>
                   <div className="bg-muted/30 rounded-md border p-2 font-medium">
-                    {patientProfile.emergencyContact.phone}
+                    {patientDetails?.emergency_contact_phone || "-"}
                   </div>
                 </div>
               </div>

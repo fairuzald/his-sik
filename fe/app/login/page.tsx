@@ -1,128 +1,152 @@
 "use client";
 
-import { H1, Small } from "@/components/elements/typography";
+import AuthLayout from "@/components/layouts/AuthLayout";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import Image from "next/image";
+import { safeApiCall } from "@/lib/api-handler";
+import { getDashboardPathForRole, setAuthTokens } from "@/lib/auth";
+import {
+  getMyProfileApiProfileMeGet,
+  loginApiAuthLoginPost,
+} from "@/sdk/output/sdk.gen";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import { z } from "zod";
+
+const loginSchema = z.object({
+  username: z.string().min(1, "Username is required"),
+  password: z.string().min(1, "Password is required"),
+});
+
+type LoginFormValues = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const router = useRouter();
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
+  const form = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      username: "",
+      password: "",
+    },
+  });
+
+  const onSubmit = async (data: LoginFormValues) => {
     setIsLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
+    // 1. Login
+    const loginData = await safeApiCall(
+      loginApiAuthLoginPost({
+        body: {
+          username: data.username,
+          password: data.password,
+        },
+      }),
+      {
+        errorMessage: "Invalid username or password.",
+      }
+    );
 
-      const roleMap: Record<string, string> = {
-        admin: "/dashboard/admin",
-        doctor: "/dashboard/doctor",
-        nurse: "/dashboard/registration",
-        registration: "/dashboard/registration",
-        patient: "/dashboard/patient",
-        pharmacy: "/dashboard/pharmacy",
-        pharmacist: "/dashboard/pharmacy",
-        lab: "/dashboard/lab",
-        cashier: "/dashboard/cashier",
-      };
+    if (loginData) {
+      setAuthTokens(loginData.access_token, loginData.refresh_token);
+      toast.success("Login successful!");
 
-      const targetPath = roleMap[username.toLowerCase()];
+      // 2. Get Profile
+      const profileData = await safeApiCall(getMyProfileApiProfileMeGet(), {
+        errorMessage: "Failed to fetch profile details",
+      });
 
-      if (targetPath) {
-        toast.success(`Selamat datang kembali, ${username}!`);
+      if (profileData) {
+        const role = profileData.role;
+        const targetPath = getDashboardPathForRole(role);
         router.push(targetPath);
       } else {
+        // Fallback
         router.push("/dashboard");
-        if (username) {
-          toast.error(
-            "Nama pengguna tidak valid atau pemetaan peran tidak ditemukan."
-          );
-        } else {
-          toast.error("Silakan masukkan nama pengguna.");
-        }
       }
-    }, 1000);
+    }
+
+    setIsLoading(false);
   };
 
   return (
-    <div className="bg-muted/20 flex min-h-screen items-center justify-center px-4">
-      <Card className="w-full max-w-md shadow-lg">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-center">
-            <Image
-              src="/logo.png"
-              alt="Logo"
-              width={100}
-              height={100}
-              className="mx-auto"
-            />
-            <H1 className="text-primary text-center text-2xl font-bold">
-              MediCare
-            </H1>
-          </CardTitle>
-          <CardDescription className="text-center">
-            Masukkan kredensial Anda untuk mengakses sistem
-          </CardDescription>
-        </CardHeader>
-        <form onSubmit={handleLogin}>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="username">Nama Pengguna</Label>
-              <Input
-                id="username"
-                placeholder="admin, dokter, pasien, dll."
-                value={username}
-                onChange={e => setUsername(e.target.value)}
-                disabled={isLoading}
-              />
-              <p className="text-muted-foreground text-xs">
-                Coba: admin, dokter, pasien, pendaftaran, farmasi, lab, kasir
-              </p>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Kata Sandi</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                disabled={isLoading}
-              />
-            </div>
-          </CardContent>
-          <CardFooter className="flex flex-col gap-4 pt-4">
-            <Button className="w-full" type="submit" disabled={isLoading}>
-              {isLoading ? "Masuk..." : "Masuk"}
+    <AuthLayout
+      title="Welcome Back"
+      description="Enter your credentials to access the system."
+      footerText="Don't have an account?"
+      footerLink="/register"
+      footerLinkText="Sign Up"
+    >
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="username">Username</Label>
+          <Input
+            id="username"
+            placeholder="Enter your username"
+            disabled={isLoading}
+            {...form.register("username")}
+            className={
+              form.formState.errors.username ? "border-destructive" : ""
+            }
+          />
+          {form.formState.errors.username && (
+            <p className="text-destructive text-xs">
+              {form.formState.errors.username.message}
+            </p>
+          )}
+        </div>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="password">Password</Label>
+            <Button
+              variant="link"
+              className="text-muted-foreground h-auto p-0 text-xs font-normal"
+              type="button"
+              onClick={() =>
+                toast.info(
+                  "Please contact the administrator to reset your password."
+                )
+              }
+              tabIndex={-1}
+            >
+              Forgot password?
             </Button>
-            <div className="text-center">
-              <Button
-                variant="link"
-                className="text-muted-foreground"
-                type="button"
-              >
-                <Small>Lupa kata sandi?</Small>
-              </Button>
-            </div>
-          </CardFooter>
-        </form>
-      </Card>
-    </div>
+          </div>
+          <Input
+            id="password"
+            type="password"
+            placeholder="••••••••"
+            disabled={isLoading}
+            {...form.register("password")}
+            className={
+              form.formState.errors.password ? "border-destructive" : ""
+            }
+          />
+          {form.formState.errors.password && (
+            <p className="text-destructive text-xs">
+              {form.formState.errors.password.message}
+            </p>
+          )}
+        </div>
+        <Button className="mt-6 w-full" type="submit" disabled={isLoading}>
+          {isLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              {submitText}...
+            </>
+          ) : (
+            "Login"
+          )}
+        </Button>
+      </form>
+    </AuthLayout>
   );
 }
+
+const submitText = "Logging in";

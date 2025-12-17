@@ -20,12 +20,84 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ArrowLeft, CreditCard, Printer } from "lucide-react";
+import { safeApiCall } from "@/lib/api-handler";
+import {
+  getInvoiceApiInvoicesInvoiceIdGet,
+  updateInvoiceApiInvoicesInvoiceIdPut,
+} from "@/sdk/output/sdk.gen";
+import { InvoiceDto } from "@/sdk/output/types.gen";
+import { ArrowLeft, CreditCard, Loader2, Printer } from "lucide-react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function CashierInvoiceDetailPage() {
   const params = useParams();
+  const invoiceId = params.id as string;
+  const router = useRouter();
+
+  const [invoice, setInvoice] = useState<InvoiceDto | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [paymentMethod, setPaymentMethod] = useState("cash");
+  const [amountPaid, setAmountPaid] = useState("");
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  useEffect(() => {
+    const fetchInvoice = async () => {
+      setIsLoading(true);
+      const result = await safeApiCall(
+        getInvoiceApiInvoicesInvoiceIdGet({
+          path: { invoice_id: invoiceId },
+        })
+      );
+      if (result) {
+        setInvoice(result); // safeApiCall returns data directly
+        setAmountPaid((result.total_amount || 0).toString());
+      }
+      setIsLoading(false);
+    };
+    fetchInvoice();
+  }, [invoiceId]);
+
+  const handlePayment = async () => {
+    if (!invoice) return;
+    setIsProcessing(true);
+
+    const paidAmountNum = parseFloat(amountPaid);
+    // Simple logic: if paid >= total, status = paid.
+    // Ideally backend handles this logic or we send specific status.
+    const isPaid = paidAmountNum >= (invoice.total_amount || 0);
+    const status = isPaid ? "paid" : "partial"; // Assuming 'partial' exists or 'unpaid'
+
+    const result = await safeApiCall(
+      updateInvoiceApiInvoicesInvoiceIdPut({
+        path: { invoice_id: invoiceId },
+        body: {
+          payment_method: paymentMethod,
+          amount_paid: paidAmountNum,
+          payment_status: status,
+        },
+      }),
+      { successMessage: "Payment processed successfully!" }
+    );
+
+    if (result) {
+      router.push("/dashboard/cashier/invoices");
+    }
+    setIsProcessing(false);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!invoice) {
+    return <div>Invoice not found</div>;
+  }
 
   return (
     <div className="space-y-8 p-2">
@@ -37,46 +109,53 @@ export default function CashierInvoiceDetailPage() {
         </Button>
         <div>
           <H2 className="text-primary text-2xl font-bold tracking-tight">
-            Proses Pembayaran
+            Process Payment
           </H2>
-          <P className="text-muted-foreground">ID Faktur: {params.id}</P>
+          <P className="text-muted-foreground">Invoice ID: {invoiceId}</P>
         </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">
         <Card className="shadow-sm md:col-span-2">
           <CardHeader className="bg-muted/20 border-b">
-            <CardTitle className="text-primary text-lg">Item Faktur</CardTitle>
+            <CardTitle className="text-primary text-lg">
+              Invoice Items
+            </CardTitle>
           </CardHeader>
           <CardContent className="pt-6">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Deskripsi</TableHead>
-                  <TableHead className="text-right">Jumlah</TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead className="text-right">Amount</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                <TableRow>
-                  <TableCell>Biaya Konsultasi - Dr. Sarah Wilson</TableCell>
-                  <TableCell className="text-right">Rp 500.000</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell>Tes Lab (Hitung Darah Lengkap)</TableCell>
-                  <TableCell className="text-right">Rp 750.000</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell>Obat-obatan (Amoxicillin, Paracetamol)</TableCell>
-                  <TableCell className="text-right">Rp 250.000</TableCell>
-                </TableRow>
+                {/* Items might not be fully populated in InvoiceDto if they are nested separately, checking structure */}
+                {invoice.items && invoice.items.length > 0 ? (
+                  invoice.items.map((item, idx) => (
+                    <TableRow key={item.id || idx}>
+                      <TableCell>{item.description}</TableCell>
+                      <TableCell className="text-right">
+                        Rp {item.unit_price?.toLocaleString("id-ID")}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell
+                      colSpan={2}
+                      className="text-muted-foreground text-center"
+                    >
+                      No details available (Summary only)
+                    </TableCell>
+                  </TableRow>
+                )}
+
                 <TableRow className="bg-muted/5 border-t-2 font-bold">
-                  <TableCell>Subtotal</TableCell>
-                  <TableCell className="text-right">Rp 1.500.000</TableCell>
-                </TableRow>
-                <TableRow className="font-bold">
-                  <TableCell>Total Tagihan</TableCell>
+                  <TableCell>Total</TableCell>
                   <TableCell className="text-primary text-right text-xl">
-                    Rp 1.500.000
+                    Rp {invoice.total_amount?.toLocaleString("id-ID")}
                   </TableCell>
                 </TableRow>
               </TableBody>
@@ -88,38 +167,63 @@ export default function CashierInvoiceDetailPage() {
           <Card className="shadow-sm">
             <CardHeader className="bg-muted/20 border-b">
               <CardTitle className="text-primary text-lg">
-                Detail Pembayaran
+                Payment Details
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6 pt-6">
               <div className="space-y-2">
-                <Label>Metode Pembayaran</Label>
-                <Select>
+                <Label>Payment Method</Label>
+                <Select
+                  value={paymentMethod}
+                  onValueChange={setPaymentMethod}
+                  disabled={invoice.payment_status === "paid"}
+                >
                   <SelectTrigger>
-                    <SelectValue placeholder="Pilih metode" />
+                    <SelectValue placeholder="Select method" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="cash">Tunai</SelectItem>
-                    <SelectItem value="card">Kartu Kredit/Debit</SelectItem>
+                    <SelectItem value="cash">Cash</SelectItem>
+                    <SelectItem value="card">Credit/Debit Card</SelectItem>
                     <SelectItem value="qris">QRIS</SelectItem>
-                    <SelectItem value="insurance">Asuransi</SelectItem>
+                    <SelectItem value="insurance">Insurance</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <Label>Jumlah Dibayarkan</Label>
-                <Input placeholder="Rp 0" />
+                <Label>Amount Paid</Label>
+                <Input
+                  placeholder="Rp 0"
+                  type="number"
+                  value={amountPaid}
+                  onChange={e => setAmountPaid(e.target.value)}
+                  disabled={invoice.payment_status === "paid"}
+                />
               </div>
 
               <div className="space-y-3 border-t pt-4">
-                <Button className="w-full gap-2">
-                  <CreditCard className="h-4 w-4" />
-                  Konfirmasi Pembayaran
-                </Button>
+                {invoice.payment_status !== "paid" ? (
+                  <Button
+                    className="w-full gap-2"
+                    onClick={handlePayment}
+                    disabled={isProcessing}
+                  >
+                    {isProcessing ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <CreditCard className="h-4 w-4" />
+                    )}
+                    Confirm Payment
+                  </Button>
+                ) : (
+                  <div className="rounded bg-green-100 p-2 text-center font-bold text-green-700">
+                    Paid
+                  </div>
+                )}
+
                 <Button variant="outline" className="w-full gap-2">
                   <Printer className="h-4 w-4" />
-                  Cetak Faktur
+                  Print Invoice
                 </Button>
               </div>
             </CardContent>

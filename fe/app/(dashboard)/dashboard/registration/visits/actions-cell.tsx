@@ -19,14 +19,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Visit } from "@/data/mock-data";
+import { VisitDto } from "@/sdk/output/types.gen";
 import { MoreHorizontal } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
 
 interface VisitActionsCellProps {
-  visit: Visit;
+  visit: VisitDto;
 }
 
 export function VisitActionsCell({ visit }: VisitActionsCellProps) {
@@ -35,7 +35,7 @@ export function VisitActionsCell({ visit }: VisitActionsCellProps) {
   const handleDelete = () => {
     // In a real app, API call here
     console.log("Canceling/Deleting visit:", visit.id);
-    toast.success("Janji temu berhasil dibatalkan");
+    toast.success("Visit cancelled successfully (simulated)");
     setShowDeleteDialog(false);
   };
 
@@ -45,19 +45,19 @@ export function VisitActionsCell({ visit }: VisitActionsCellProps) {
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" size="icon">
             <MoreHorizontal className="h-4 w-4" />
-            <span className="sr-only">Buka menu</span>
+            <span className="sr-only">Open menu</span>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuLabel>Aksi</DropdownMenuLabel>
+          <DropdownMenuLabel>Actions</DropdownMenuLabel>
           <DropdownMenuItem asChild>
             <Link href={`/dashboard/registration/visits/${visit.id}`}>
-              Lihat Detail
+              View Details
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
             <Link href={`/dashboard/registration/visits/${visit.id}/edit`}>
-              Edit Janji Temu
+              Edit Visit
             </Link>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
@@ -65,7 +65,7 @@ export function VisitActionsCell({ visit }: VisitActionsCellProps) {
             className="text-destructive focus:text-destructive"
             onSelect={() => setShowDeleteDialog(true)}
           >
-            Batalkan Janji Temu
+            Cancel Visit
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -73,19 +73,20 @@ export function VisitActionsCell({ visit }: VisitActionsCellProps) {
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Apakah Anda yakin?</AlertDialogTitle>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              Tindakan ini tidak dapat dibatalkan. Ini akan membatalkan janji
-              temu untuk <strong>{visit.patient_name}</strong>.
+              This action cannot be undone. This will cancel the visit for
+              patient ID
+              <strong> {visit.patient_id.substring(0, 8)}...</strong>.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Simpan Janji Temu</AlertDialogCancel>
+            <AlertDialogCancel>Keep Visit</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               className="bg-destructive hover:bg-destructive/90"
             >
-              Batalkan Janji Temu
+              Cancel Visit
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

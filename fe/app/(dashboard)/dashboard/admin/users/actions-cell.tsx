@@ -19,23 +19,24 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { User } from "@/data/mock-data";
+import { UserDao } from "@/sdk/output/types.gen";
 import { MoreHorizontal } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
 
 interface UserActionsCellProps {
-  user: User;
+  user: UserDao;
 }
 
 export function UserActionsCell({ user }: UserActionsCellProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
-  const handleDelete = () => {
-    // In a real app, API call here
-    console.log("Deleting user:", user.id);
-    toast.success("Pengguna berhasil dihapus");
+  const handleDelete = async () => {
+    // TODO: SDK is missing deleteUser or deactivateUser endpoint.
+    // Ideally: await safeApiCall(deleteUserApiUsersUserIdDelete({ path: { user_id: user.id } }));
+    console.warn("Delete/Deactivate User API not available in SDK");
+    toast.error("Deactivate User functionality not implemented in SDK yet.");
     setShowDeleteDialog(false);
   };
 
@@ -45,23 +46,23 @@ export function UserActionsCell({ user }: UserActionsCellProps) {
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" size="icon">
             <MoreHorizontal className="h-4 w-4" />
-            <span className="sr-only">Buka menu</span>
+            <span className="sr-only">Open menu</span>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuLabel>Aksi</DropdownMenuLabel>
+          <DropdownMenuLabel>Actions</DropdownMenuLabel>
           <DropdownMenuItem asChild>
             <Link href={`/dashboard/admin/users/${user.id}/edit`}>
-              Edit Pengguna
+              Edit User (Mock)
             </Link>
           </DropdownMenuItem>
-          <DropdownMenuItem>Atur Ulang Kata Sandi</DropdownMenuItem>
+          {/* <DropdownMenuItem>Reset Password</DropdownMenuItem> */}
           <DropdownMenuSeparator />
           <DropdownMenuItem
             className="text-destructive focus:text-destructive"
             onSelect={() => setShowDeleteDialog(true)}
           >
-            Nonaktifkan Pengguna
+            Deactivate User
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -69,19 +70,19 @@ export function UserActionsCell({ user }: UserActionsCellProps) {
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Apakah Anda yakin?</AlertDialogTitle>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              Tindakan ini tidak dapat dibatalkan. Ini akan menonaktifkan akun
-              pengguna secara permanen untuk <strong>{user.username}</strong>.
+              This action cannot be undone. This will permanently deactivate the
+              user account for <strong>{user.username}</strong>.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               className="bg-destructive hover:bg-destructive/90"
             >
-              Nonaktifkan
+              Deactivate
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

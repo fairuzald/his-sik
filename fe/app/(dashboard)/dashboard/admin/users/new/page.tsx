@@ -1,37 +1,86 @@
 "use client";
 
-import { H2, P } from "@/components/elements/typography";
-import { UserForm } from "@/components/forms/user-form";
+import { UserForm, UserFormValues } from "@/components/forms/UserForm";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { User } from "@/data/mock-data";
+import { createUserApiUsersPost } from "@/sdk/output/sdk.gen";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { toast } from "sonner";
 
-export default function NewUserPage() {
+export default function CreateUserPage() {
   const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (data: Partial<User>) => {
-    // In a real app, this would be an API call
-    console.log("Creating user:", data);
-    toast.success("Pengguna berhasil dibuat");
-    router.push("/dashboard/admin/users");
+  const onSubmit = async (data: UserFormValues) => {
+    setIsLoading(true);
+    try {
+      const response = await createUserApiUsersPost({
+        body: {
+          full_name: data.full_name,
+          username: data.username,
+          password: data.password!,
+          email: data.email || null,
+          phone_number: data.phone_number || null,
+          role: data.role || "patient",
+        },
+      });
+
+      if (response.data?.success) {
+        toast.success("User created successfully");
+        router.push("/dashboard/admin/users");
+      } else {
+        toast.error(response.data?.message || "Failed to create user");
+      }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      if (error?.response?.data?.message) {
+        toast.error(error.response.data.message);
+      } else {
+        toast.error("Failed to create user. Please try again.");
+        console.error(error);
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <div className="space-y-8 p-2">
-      <div>
-        <H2 className="text-primary text-3xl font-bold tracking-tight">
-          Pengguna Baru
-        </H2>
-        <P className="text-muted-foreground mt-1">Buat akun pengguna baru.</P>
-      </div>
+    <div className="space-y-6">
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/dashboard/admin">Dashboard</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/dashboard/admin/users">Users</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>Create User</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
 
-      <Card className="shadow-sm">
-        <CardHeader className="bg-muted/20 border-b">
-          <CardTitle>Detail Pengguna</CardTitle>
+      <Card>
+        <CardHeader>
+          <CardTitle>Create New User</CardTitle>
         </CardHeader>
-        <CardContent className="pt-6">
-          <UserForm onSubmit={handleSubmit} onCancel={() => router.back()} />
+        <CardContent>
+          <UserForm
+            onSubmit={onSubmit}
+            isLoading={isLoading}
+            isAdmin={true}
+            submitText="Create User"
+          />
         </CardContent>
       </Card>
     </div>

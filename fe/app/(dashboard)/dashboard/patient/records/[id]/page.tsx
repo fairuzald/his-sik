@@ -3,14 +3,48 @@
 import { H2, H4, P } from "@/components/elements/typography";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { medicalRecords } from "@/data/mock-data";
-import { ArrowLeft, Calendar, User } from "lucide-react";
+import { safeApiCall } from "@/lib/api-handler";
+import { getMedicalRecordApiMedicalRecordsRecordIdGet } from "@/sdk/output/sdk.gen";
+import { MedicalRecordDto } from "@/sdk/output/types.gen";
+import { format } from "date-fns";
+import { ArrowLeft, Calendar, Loader2, User } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
+// removed toast import
 
 export default function MedicalRecordDetailPage() {
   const params = useParams();
-  const record = medicalRecords.find(r => r.id === params.id);
+  const id = params.id as string;
+  const [record, setRecord] = useState<MedicalRecordDto | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchRecord = async () => {
+      const result = await safeApiCall(
+        getMedicalRecordApiMedicalRecordsRecordIdGet({
+          path: { record_id: id },
+        }),
+        {
+          errorMessage: "Failed to load medical record details",
+        }
+      );
+
+      if (result) {
+        setRecord(result);
+      }
+      setIsLoading(false);
+    };
+    if (id) fetchRecord();
+  }, [id]);
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   if (!record) {
     return <div>Record not found</div>;
@@ -39,16 +73,21 @@ export default function MedicalRecordDetailPage() {
           <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
             <div>
               <CardTitle className="text-xl">
-                {record.primary_diagnosis}
+                {record.diagnosis || "No Diagnosis Recorded"}
               </CardTitle>
               <div className="text-muted-foreground mt-1 flex items-center gap-4 text-sm">
                 <span className="flex items-center gap-1">
                   <Calendar className="h-3 w-3" />
-                  {record.date}
+                  {record.created_at
+                    ? format(new Date(record.created_at), "dd MMM yyyy")
+                    : "-"}
                 </span>
                 <span className="flex items-center gap-1">
                   <User className="h-3 w-3" />
-                  {record.doctor_name}
+                  {/* Doctor ID not in record DTO directly, would need fetch via Visit */}
+                  {record.visit_id
+                    ? `Visit ID: ${record.visit_id.substring(0, 8)}...`
+                    : "Unknown Visit"}
                 </span>
               </div>
             </div>
@@ -56,9 +95,11 @@ export default function MedicalRecordDetailPage() {
         </CardHeader>
         <CardContent className="space-y-6 pt-6">
           <div className="grid gap-1">
-            <H4 className="text-primary text-sm font-semibold">Anamnesis</H4>
+            <H4 className="text-primary text-sm font-semibold">
+              Physical Examination
+            </H4>
             <P className="text-muted-foreground bg-muted/20 rounded-md border p-3 text-sm">
-              {record.anamnesis}
+              {record.physical_exam || "-"}
             </P>
           </div>
 
@@ -67,7 +108,7 @@ export default function MedicalRecordDetailPage() {
               Treatment Plan
             </H4>
             <P className="text-muted-foreground bg-muted/20 rounded-md border p-3 text-sm">
-              {record.treatment_plan}
+              {record.treatment_plan || "-"}
             </P>
           </div>
 
@@ -76,7 +117,7 @@ export default function MedicalRecordDetailPage() {
               Doctor&apos;s Notes
             </H4>
             <P className="text-muted-foreground bg-muted/20 rounded-md border p-3 text-sm">
-              {record.doctor_notes}
+              {record.doctor_notes || "-"}
             </P>
           </div>
         </CardContent>

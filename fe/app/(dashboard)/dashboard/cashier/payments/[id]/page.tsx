@@ -5,32 +5,46 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, Download, Printer } from "lucide-react";
+import { safeApiCall } from "@/lib/api-handler";
+import { getInvoiceApiInvoicesInvoiceIdGet } from "@/sdk/output/sdk.gen";
+import { InvoiceDto } from "@/sdk/output/types.gen";
+import { format } from "date-fns";
+import { ArrowLeft, Download, Loader2, Printer } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function PaymentDetailPage() {
   const params = useParams();
   const id = params.id as string;
+  const [invoice, setInvoice] = useState<InvoiceDto | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Mock data - in real app fetch based on ID
-  const payment = {
-    id: id,
-    invoiceId: "INV-" + id.split("-")[1],
-    date: "2023-11-20 14:30",
-    patient: "Alice Johnson",
-    patientId: "P-12345",
-    method: "Kartu Kredit",
-    status: "Sukses",
-    items: [
-      { description: "Biaya Konsultasi", amount: 150000 },
-      { description: "Paracetamol 500mg (10 tabs)", amount: 50000 },
-      { description: "Amoxicillin 500mg (15 caps)", amount: 75000 },
-    ],
-    subtotal: 275000,
-    tax: 27500,
-    total: 302500,
-  };
+  useEffect(() => {
+    const fetchInvoice = async () => {
+      setIsLoading(true);
+      const result = await safeApiCall(
+        getInvoiceApiInvoicesInvoiceIdGet({ path: { invoice_id: id } })
+      );
+      if (result) {
+        setInvoice(result);
+      }
+      setIsLoading(false);
+    };
+    fetchInvoice();
+  }, [id]);
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!invoice) {
+    return <div className="p-8 text-center">Receipt not found</div>;
+  }
 
   return (
     <div className="space-y-8 p-2">
@@ -43,19 +57,19 @@ export default function PaymentDetailPage() {
           </Button>
           <div>
             <H2 className="text-primary text-2xl font-bold tracking-tight">
-              Kwitansi Pembayaran
+              Payment Receipt
             </H2>
-            <P className="text-muted-foreground">{payment.id}</P>
+            <P className="text-muted-foreground">{id.substring(0, 8)}...</P>
           </div>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" className="gap-2">
             <Printer className="h-4 w-4" />
-            Cetak
+            Print
           </Button>
           <Button className="gap-2">
             <Download className="h-4 w-4" />
-            Unduh PDF
+            Download PDF
           </Button>
         </div>
       </div>
@@ -76,29 +90,30 @@ export default function PaymentDetailPage() {
           <CardContent className="space-y-6 p-8">
             <div className="flex justify-between">
               <div className="space-y-1">
-                <Small className="text-muted-foreground">
-                  Ditagihkan Kepada
-                </Small>
-                <p className="font-medium">{payment.patient}</p>
-                <p className="text-sm text-gray-500">ID: {payment.patientId}</p>
+                <Small className="text-muted-foreground">Billed To</Small>
+                <p className="font-medium">
+                  {invoice.visit?.patient_id
+                    ? `Patient: ${invoice.visit.patient_id.substring(0, 8)}...`
+                    : "Unknown Patient"}
+                </p>
               </div>
               <div className="space-y-1 text-right">
-                <Small className="text-muted-foreground">
-                  Detail Pembayaran
-                </Small>
+                <Small className="text-muted-foreground">Payment Details</Small>
                 <p className="text-sm">
-                  <span className="text-muted-foreground">Tanggal:</span>{" "}
-                  {payment.date}
+                  <span className="text-muted-foreground">Date:</span>{" "}
+                  {invoice.updated_at
+                    ? format(new Date(invoice.updated_at), "PPp")
+                    : "-"}
                 </p>
                 <p className="text-sm">
-                  <span className="text-muted-foreground">Metode:</span>{" "}
-                  {payment.method}
+                  <span className="text-muted-foreground">Method:</span>{" "}
+                  {invoice.payment_method || "N/A"}
                 </p>
                 <Badge
                   variant="outline"
                   className="mt-1 border-green-200 bg-green-50 text-green-700"
                 >
-                  {payment.status}
+                  {invoice.payment_status}
                 </Badge>
               </div>
             </div>
@@ -107,41 +122,42 @@ export default function PaymentDetailPage() {
 
             <div className="space-y-4">
               <div className="grid grid-cols-12 text-sm font-medium text-gray-500">
-                <div className="col-span-8">Deskripsi</div>
-                <div className="col-span-4 text-right">Jumlah</div>
+                <div className="col-span-8">Description</div>
+                <div className="col-span-4 text-right">Amount</div>
               </div>
-              {payment.items.map((item, index) => (
-                <div key={index} className="grid grid-cols-12 text-sm">
-                  <div className="col-span-8">{item.description}</div>
-                  <div className="col-span-4 text-right">
-                    Rp {item.amount.toLocaleString("id-ID")}
+              {invoice.items && invoice.items.length > 0 ? (
+                invoice.items.map((item, index) => (
+                  <div
+                    key={item.id || index}
+                    className="grid grid-cols-12 text-sm"
+                  >
+                    <div className="col-span-8">{item.description}</div>
+                    <div className="col-span-4 text-right">
+                      Rp {item.subtotal?.toLocaleString("id-ID") || 0}
+                    </div>
                   </div>
+                ))
+              ) : (
+                <div className="text-muted-foreground text-center text-sm">
+                  No itemized details available
                 </div>
-              ))}
+              )}
             </div>
 
             <Separator />
 
             <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Subtotal</span>
-                <span>Rp {payment.subtotal.toLocaleString("id-ID")}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Pajak (10%)</span>
-                <span>Rp {payment.tax.toLocaleString("id-ID")}</span>
-              </div>
               <div className="flex justify-between text-lg font-bold">
-                <span>Total Dibayar</span>
+                <span>Total Paid</span>
                 <span className="text-primary">
-                  Rp {payment.total.toLocaleString("id-ID")}
+                  Rp {invoice.amount_paid?.toLocaleString("id-ID") || 0}
                 </span>
               </div>
             </div>
 
             <div className="pt-8 text-center">
               <P className="text-muted-foreground text-sm">
-                Terima kasih telah memilih MediCare.
+                Thank you for choosing MediCare.
               </P>
             </div>
           </CardContent>

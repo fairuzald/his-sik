@@ -4,58 +4,69 @@ import { H2, P } from "@/components/elements/typography";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/ui/data-table";
-import { prescriptions, visits } from "@/data/mock-data";
+import { safeApiCall } from "@/lib/api-handler";
+import { listPrescriptionsApiPrescriptionsGet } from "@/sdk/output/sdk.gen";
+import { PrescriptionDto } from "@/sdk/output/types.gen";
 import { ColumnDef } from "@tanstack/react-table";
-import { Eye, Plus, Trash2 } from "lucide-react";
+import { format } from "date-fns";
+import { Eye, Loader2, Plus } from "lucide-react";
 import Link from "next/link";
-import { toast } from "sonner";
+import { useEffect, useState } from "react";
 
-type PrescriptionWithPatient = (typeof prescriptions)[0] & {
-  patient_name: string;
-  doctor_name: string;
-};
-
-const data: PrescriptionWithPatient[] = prescriptions.map(prescription => {
-  const visit = visits.find(v => v.id === prescription.visit_id);
-  return {
-    ...prescription,
-    patient_name: visit?.patient_name || "Unknown",
-    doctor_name: visit?.doctor_name || "Unknown",
-  };
-});
-
-const columns: ColumnDef<PrescriptionWithPatient>[] = [
+const columns: ColumnDef<PrescriptionDto>[] = [
   {
     accessorKey: "id",
     header: "ID",
-    cell: ({ row }) => <span className="font-mono">{row.getValue("id")}</span>,
+    cell: ({ row }) => (
+      <span className="font-mono text-xs">
+        {row.original.id.substring(0, 8)}...
+      </span>
+    ),
   },
   {
-    accessorKey: "patient_name",
-    header: "Pasien",
+    header: "Patient",
+    cell: ({ row }) => (
+      <span className="text-muted-foreground text-xs">
+        {row.original.visit?.patient_id
+          ? row.original.visit.patient_id.substring(0, 8) + "..."
+          : "Unknown"}
+      </span>
+    ),
   },
   {
-    accessorKey: "doctor_name",
-    header: "Dokter",
+    header: "Doctor",
+    cell: ({ row }) => (
+      <span className="text-muted-foreground text-xs">
+        {row.original.doctor_id.substring(0, 8)}...
+      </span>
+    ),
   },
   {
-    accessorKey: "date",
-    header: "Tanggal",
+    accessorKey: "created_at",
+    header: "Date",
+    cell: ({ row }) => (
+      <span>
+        {row.original.created_at
+          ? format(new Date(row.original.created_at), "PP")
+          : "-"}
+      </span>
+    ),
   },
   {
-    accessorKey: "status",
+    accessorKey: "prescription_status",
     header: "Status",
     cell: ({ row }) => {
-      const status = row.getValue("status") as string;
+      const status = row.original.prescription_status;
       return (
         <Badge
           variant={
-            status === "Selesai"
+            status === "completed"
               ? "default"
-              : status === "Tertunda"
+              : status === "pending"
                 ? "secondary"
                 : "outline"
           }
+          className={status === "completed" ? "bg-green-500" : ""}
         >
           {status}
         </Badge>
@@ -72,16 +83,6 @@ const columns: ColumnDef<PrescriptionWithPatient>[] = [
               <Eye className="h-4 w-4" />
             </Link>
           </Button>
-          <Button
-            size="icon"
-            variant="ghost"
-            className="text-destructive hover:text-destructive"
-            onClick={() => {
-              toast.error("Resep dihapus (mock)");
-            }}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
         </div>
       );
     },
@@ -89,26 +90,62 @@ const columns: ColumnDef<PrescriptionWithPatient>[] = [
 ];
 
 export default function PharmacyPrescriptionsPage() {
+  const [prescriptions, setPrescriptions] = useState<PrescriptionDto[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      const result = await safeApiCall(
+        listPrescriptionsApiPrescriptionsGet({ query: { limit: 100 } })
+      );
+      if (result && Array.isArray(result)) {
+        setPrescriptions(result);
+      }
+      setIsLoading(false);
+    };
+    fetchData();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8 p-2">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <H2 className="text-primary text-3xl font-bold tracking-tight">
-            Resep
+            Prescriptions
           </H2>
           <P className="text-muted-foreground mt-1">
-            Kelola resep pasien dan pesanan.
+            Manage patient prescriptions and orders.
           </P>
         </div>
         <Button className="gap-2 shadow-sm" asChild>
           <Link href="/dashboard/pharmacy/prescriptions/new">
             <Plus className="h-4 w-4" />
-            Resep Baru
+            New Prescription
           </Link>
         </Button>
       </div>
 
-      <DataTable columns={columns} data={data} searchKey="patient_name" />
+      <DataTable
+        columns={columns}
+        data={prescriptions}
+        searchKey="id"
+        filterKey="prescription_status"
+        filterOptions={[
+          { label: "Pending", value: "pending" },
+          { label: "Processing", value: "processing" },
+          { label: "Completed", value: "completed" },
+          { label: "Canceled", value: "canceled" },
+        ]}
+      />
     </div>
   );
 }

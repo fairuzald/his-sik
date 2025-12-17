@@ -15,13 +15,13 @@ export default function EditPatientPage() {
   const patient = patients.find(p => p.id === params.id);
 
   if (!patient) {
-    return <div>Pasien tidak ditemukan</div>;
+    return <div>Patient not found</div>;
   }
 
   const handleSubmit = (data: Partial<Patient>) => {
     // In a real app, this would be an API call
     console.log("Updating patient:", data);
-    toast.success("Pasien berhasil diperbarui");
+    toast.success("Patient updated successfully");
     router.push("/dashboard/registration/patients");
   };
 
@@ -35,10 +35,10 @@ export default function EditPatientPage() {
         </Button>
         <div>
           <H2 className="text-primary text-2xl font-bold tracking-tight">
-            Edit Pasien
+            Edit Patient
           </H2>
           <P className="text-muted-foreground text-sm">
-            Perbarui informasi pasien.
+            Update patient information.
           </P>
         </div>
       </div>

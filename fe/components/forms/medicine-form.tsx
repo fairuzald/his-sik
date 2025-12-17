@@ -1,9 +1,11 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -17,55 +19,51 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Medicine } from "@/data/mock-data";
+import { MedicineDto } from "@/sdk/output/types.gen";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 
+// Matches MedicineCreateDto
 const medicineSchema = z.object({
-  medicine_code: z.string().min(1, "Kode obat wajib diisi"),
-  medicine_name: z.string().min(1, "Nama obat wajib diisi"),
-  dosage_form: z.string().optional(),
+  medicine_code: z.string().min(1, "Code is required"),
+  medicine_name: z.string().min(1, "Name is required"),
   unit: z.string().optional(),
-  unit_price: z.number().min(0, "Harga harus positif"),
-  stock: z.number().min(0, "Stok harus positif"),
-  status: z.string().optional(),
+  unit_price: z.string().min(1, "Price is required"),
+  is_active: z.boolean(),
 });
 
-export type MedicineFormValues = z.infer<typeof medicineSchema>;
+export type MedicineFormValues = {
+  medicine_code: string;
+  medicine_name: string;
+  unit?: string;
+  unit_price: string;
+  is_active: boolean;
+};
 
 interface MedicineFormProps {
-  initialData?: Medicine;
+  initialData?: MedicineDto;
   onSubmit: (data: MedicineFormValues) => void;
   onCancel: () => void;
+  isLoading?: boolean;
 }
 
 export function MedicineForm({
   initialData,
   onSubmit,
   onCancel,
+  isLoading,
 }: MedicineFormProps) {
   const form = useForm<MedicineFormValues>({
     resolver: zodResolver(medicineSchema),
-    defaultValues: (initialData
-      ? {
-          medicine_code: initialData.medicine_code,
-          medicine_name: initialData.medicine_name,
-          dosage_form: initialData.dosage_form,
-          unit: initialData.unit,
-          unit_price: initialData.unit_price,
-          stock: initialData.stock,
-          status: initialData.status,
-        }
-      : {
-          medicine_code: "",
-          medicine_name: "",
-          dosage_form: "",
-          unit: "",
-          unit_price: 0,
-          stock: 0,
-          status: "Active",
-        }) as MedicineFormValues,
+    defaultValues: {
+      medicine_code: initialData?.medicine_code || "",
+      medicine_name: initialData?.medicine_name || "",
+      unit: initialData?.unit || "",
+      unit_price: String(initialData?.unit_price || 0),
+      is_active: initialData?.is_active ?? true,
+    },
   });
 
   return (
@@ -77,7 +75,7 @@ export function MedicineForm({
             name="medicine_code"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Kode Obat</FormLabel>
+                <FormLabel>Medicine Code</FormLabel>
                 <FormControl>
                   <Input placeholder="MED-001" {...field} />
                 </FormControl>
@@ -90,7 +88,7 @@ export function MedicineForm({
             name="medicine_name"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Nama Obat</FormLabel>
+                <FormLabel>Medicine Name</FormLabel>
                 <FormControl>
                   <Input placeholder="Paracetamol" {...field} />
                 </FormControl>
@@ -100,52 +98,27 @@ export function MedicineForm({
           />
           <FormField
             control={form.control}
-            name="dosage_form"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Bentuk Sediaan</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Pilih bentuk" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="Tablet">Tablet</SelectItem>
-                    <SelectItem value="Capsule">Kapsul</SelectItem>
-                    <SelectItem value="Syrup">Sirup</SelectItem>
-                    <SelectItem value="Injection">Injeksi</SelectItem>
-                    <SelectItem value="Cream">Krim</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
             name="unit"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Satuan</FormLabel>
+                <FormLabel>Unit</FormLabel>
                 <Select
                   onValueChange={field.onChange}
                   defaultValue={field.value}
                 >
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Pilih satuan" />
+                      <SelectValue placeholder="Select unit" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
                     <SelectItem value="Strip">Strip</SelectItem>
-                    <SelectItem value="Bottle">Botol</SelectItem>
-                    <SelectItem value="Box">Kotak</SelectItem>
+                    <SelectItem value="Bottle">Bottle</SelectItem>
+                    <SelectItem value="Box">Box</SelectItem>
                     <SelectItem value="Vial">Vial</SelectItem>
                     <SelectItem value="Tube">Tube</SelectItem>
+                    <SelectItem value="Tablet">Tablet</SelectItem>
+                    <SelectItem value="Capsule">Capsule</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -157,7 +130,7 @@ export function MedicineForm({
             name="unit_price"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Harga Satuan (Rp)</FormLabel>
+                <FormLabel>Unit Price (Rp)</FormLabel>
                 <FormControl>
                   <Input type="number" {...field} />
                 </FormControl>
@@ -165,26 +138,42 @@ export function MedicineForm({
               </FormItem>
             )}
           />
+
           <FormField
             control={form.control}
-            name="stock"
+            name="is_active"
             render={({ field }) => (
-              <FormItem>
-                <FormLabel>Stok</FormLabel>
+              <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 shadow-sm">
                 <FormControl>
-                  <Input type="number" {...field} />
+                  <Checkbox
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
                 </FormControl>
-                <FormMessage />
+                <div className="space-y-1 leading-none">
+                  <FormLabel>Active</FormLabel>
+                  <FormDescription>
+                    This medicine is available for prescription.
+                  </FormDescription>
+                </div>
               </FormItem>
             )}
           />
         </div>
 
         <div className="flex justify-end gap-4">
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Batal
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            disabled={isLoading}
+          >
+            Cancel
           </Button>
-          <Button type="submit">Simpan Obat</Button>
+          <Button type="submit" disabled={isLoading}>
+            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Save Medicine
+          </Button>
         </div>
       </form>
     </Form>

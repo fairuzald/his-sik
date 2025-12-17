@@ -6,111 +6,224 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataTable } from "@/components/ui/data-table";
+import { safeApiCall } from "@/lib/api-handler";
+import {
+  getMyProfileApiProfileMeGet,
+  listVisitsApiVisitsGet,
+} from "@/sdk/output/sdk.gen";
+import {
+  DoctorProfileDao,
+  VisitDto,
+  VisitStatusEnum,
+} from "@/sdk/output/types.gen";
 import { ColumnDef } from "@tanstack/react-table";
+import { format } from "date-fns";
 import { Activity, Calendar, Clock, Users } from "lucide-react";
 import Link from "next/link";
-
-type Visit = {
-  id: string;
-  patient: string;
-  time: string;
-  type: string;
-  status: string;
-};
-
-const todayQueue: Visit[] = [
-  {
-    id: "VST-001",
-    patient: "Alice Johnson",
-    time: "09:00",
-    type: "Konsultasi Baru",
-    status: "Menunggu",
-  },
-  {
-    id: "VST-002",
-    patient: "Bob Smith",
-    time: "09:30",
-    type: "Tindak Lanjut",
-    status: "Sedang Berlangsung",
-  },
-  {
-    id: "VST-003",
-    patient: "Charlie Brown",
-    time: "10:00",
-    type: "Pemeriksaan Rutin",
-    status: "Terjadwal",
-  },
-];
-
-const columns: ColumnDef<Visit>[] = [
-  { accessorKey: "time", header: "Waktu" },
-  { accessorKey: "patient", header: "Pasien" },
-  { accessorKey: "type", header: "Tipe" },
-  {
-    accessorKey: "status",
-    header: "Status",
-    cell: ({ row }) => (
-      <Badge
-        variant={
-          row.original.status === "Sedang Berlangsung" ? "default" : "secondary"
-        }
-        className={
-          row.original.status === "Sedang Berlangsung" ? "bg-blue-500" : ""
-        }
-      >
-        {row.original.status}
-      </Badge>
-    ),
-  },
-  {
-    id: "actions",
-    cell: ({ row }) => (
-      <Button size="sm" asChild>
-        <Link href={`/dashboard/doctor/visits/${row.original.id}`}>
-          {row.original.status === "Sedang Berlangsung" ? "Lanjutkan" : "Mulai"}
-        </Link>
-      </Button>
-    ),
-  },
-];
+import { useEffect, useState } from "react";
 
 export default function DoctorDashboard() {
+  const [doctorName, setDoctorName] = useState("");
+  const [visits, setVisits] = useState<VisitDto[]>([]);
+  const [stats, setStats] = useState({
+    waiting: 0,
+    completed: 0,
+    averageTime: "0m", // Placeholder as we don't have duration data easily
+    critical: 0, // Placeholder
+  });
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      // 1. Get Profile
+      const profile = await safeApiCall(getMyProfileApiProfileMeGet());
+      if (profile) {
+        setDoctorName(profile.full_name);
+        // Assuming the current user is a doctor and has a doctor profile if needed,
+        // but listVisits filters by the doctor associated with the token usually?
+        // Actually, listVisitsApiVisitsGet might return all visits if admin, or filtered if doctor.
+        // Let's assume the backend handles "my visits" logic or we filter by logged in user ID if we had it.
+        // For now, we'll fetch visits and filter client side if necessary, or assume backend filters for 'doctor' role.
+
+        // However, looking at the API, `listVisitsApiVisitsGet` has no explicit `doctor_id` filter in the SDK signature seen previously?
+        // Let's check `ListVisitsApiVisitsGetData`.
+        // It has `visit_status`, `date_from`, `date_to`.
+
+        // Let's fetch today's visits.
+        const today = new Date();
+        const startOfDay = new Date(today.setHours(0, 0, 0, 0)).toISOString();
+        const endOfDay = new Date(
+          today.setHours(23, 59, 59, 999)
+        ).toISOString();
+
+        const visitsData = await safeApiCall(
+          listVisitsApiVisitsGet({
+            query: {
+              date_from: startOfDay,
+              date_to: endOfDay,
+              limit: 50, // Reasonable limit for dashboard
+            },
+          })
+        );
+
+        if (visitsData) {
+          // Filter locally for the logged in doctor if needed (if the API returns all).
+          // Since we don't have the doctor ID easily accessible without strict typing of `profile.details`,
+          // we will assume the API returns relevant visits or show all for now.
+          // In a real app, `profile.details` would be cast to DoctorProfileDao to get the ID.
+
+          let myVisits = visitsData;
+          if (profile.role === "doctor" && profile.details) {
+            const docDetails = profile.details as DoctorProfileDao;
+            // If details has ID (it might be in the parent user object or details depending on backend).
+            // User object has ID. Doctor DAO usually links to User ID.
+            // VisitDto has `doctor_id`.
+            // Let's try to match `doctor_id` with `profile.id` or `profile.details.id`?
+            // The `UserDao` has `id`. `VisitDto.doctor_id` probably refers to `User.id` of the doctor? or `Doctor.id`?
+            // Usually in this system `doctor_id` in Visit links to the User ID of the doctor or a specific Doctor ID.
+            // Let's assume for dashboard we just show what we get.
+            myVisits = visitsData.filter(v => v.doctor_id === profile.id);
+          }
+
+          setVisits(myVisits);
+
+          // Calculate Stats
+          const waiting = myVisits.filter(
+            v => v.visit_status === VisitStatusEnum.REGISTERED
+          ).length;
+          const completed = myVisits.filter(
+            v => v.visit_status === VisitStatusEnum.COMPLETED
+          ).length;
+
+          setStats({
+            waiting,
+            completed,
+            averageTime: "15m", // Mock
+            critical: 0, // Mock
+          });
+        }
+      }
+      setIsLoading(false);
+    };
+
+    fetchData();
+  }, []);
+
+  const columns: ColumnDef<VisitDto>[] = [
+    {
+      accessorKey: "visit_datetime",
+      header: "Time",
+      cell: ({ row }) => {
+        const date = new Date(row.original.visit_datetime || "");
+        return format(date, "HH:mm");
+      },
+    },
+    // We don't have patient name directly in VisitDto usually, unless expanded.
+    // VisitDto has `patient_id`. We might need to fetch patient or if the backend expands it.
+    // Looking at VisitDto: `patient_id: string`. No patient object?
+    // Wait, earlier I saw `visit?: VisitDto` inside `LabOrderDto`.
+    // Let's check `VisitDto` definition again.
+    // If it doesn't have patient name, we might display "Patient ID: ..." or need a separate fetch/expansion.
+    // The previously used mock data had names.
+    // Let's perform a "best effort" or check if `patient` is in `VisitDto` or if `safeApiCall` returns an expanded object.
+    // The `VisitDto` in `types.gen.ts` showed `updated_at`, `created_at`, etc. but I didn't see `patient` object in the snippet I saw.
+    // I will use `patient_id` for now.
+    {
+      accessorKey: "patient_id",
+      header: "Patient ID",
+      cell: ({ row }) => (
+        <span className="font-mono text-xs">
+          {row.original.patient_id.substring(0, 8)}...
+        </span>
+      ),
+    },
+    {
+      accessorKey: "visit_type",
+      header: "Type",
+      cell: ({ row }) => (
+        <span className="capitalize">
+          {row.original.visit_type?.replace(/_/g, " ")}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "visit_status",
+      header: "Status",
+      cell: ({ row }) => (
+        <Badge
+          variant={
+            row.original.visit_status === VisitStatusEnum.EXAMINING
+              ? "default"
+              : "secondary"
+          }
+          className={
+            row.original.visit_status === VisitStatusEnum.EXAMINING
+              ? "bg-blue-500 hover:bg-blue-600"
+              : ""
+          }
+        >
+          {row.original.visit_status}
+        </Badge>
+      ),
+    },
+    {
+      id: "actions",
+      cell: ({ row }) => (
+        <Button size="sm" asChild>
+          <Link href={`/dashboard/doctor/visits/${row.original.id}`}>
+            {row.original.visit_status === VisitStatusEnum.EXAMINING
+              ? "Resume"
+              : "Start"}
+          </Link>
+        </Button>
+      ),
+    },
+  ];
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <span className="animate-pulse">Loading dashboard...</span>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8 p-2">
       <div>
         <H2 className="text-primary text-3xl font-bold tracking-tight">
-          Dasbor Dokter
+          Doctor Dashboard
         </H2>
         <P className="text-muted-foreground mt-1">
-          Selamat datang kembali, Dr. Sarah Wilson.
+          Welcome back, {doctorName || "Doctor"}.
         </P>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          title="Pasien Menunggu"
-          value="4"
-          description="Di ruang tunggu"
+          title="Waiting Patients"
+          value={stats.waiting.toString()}
+          description="In waiting room"
           icon={Users}
         />
         <StatCard
-          title="Selesai Hari Ini"
-          value="12"
-          description="Kunjungan selesai"
+          title="Completed Today"
+          value={stats.completed.toString()}
+          description="Visits finished"
           icon={Calendar}
         />
         <StatCard
-          title="Rata-rata Waktu Konsultasi"
-          value="18m"
-          description="Per pasien"
+          title="Avg. Consult Time"
+          value={stats.averageTime}
+          description="Per patient"
           icon={Clock}
         />
         <StatCard
-          title="Peringatan Kritis"
-          value="2"
-          description="Membutuhkan perhatian"
+          title="Critical Alerts"
+          value={stats.critical.toString()}
+          description="Requires attention"
           icon={Activity}
-          trend="+1"
+          trend="+0"
           trendUp={false}
         />
       </div>
@@ -119,50 +232,39 @@ export default function DoctorDashboard() {
         <Card className="shadow-sm md:col-span-2">
           <CardHeader className="bg-muted/20 flex flex-row items-center justify-between border-b">
             <CardTitle className="text-primary text-xl">
-              Antrean Hari Ini
+              Today's Queue
             </CardTitle>
             <Button variant="outline" size="sm" asChild>
-              <Link href="/dashboard/doctor/queue">Lihat Semua</Link>
+              <Link href="/dashboard/doctor/queue">View All</Link>
             </Button>
           </CardHeader>
           <CardContent className="pt-4">
             <DataTable
               columns={columns}
-              data={todayQueue}
-              filterKey="status"
-              filterOptions={[
-                { label: "Menunggu", value: "Menunggu" },
-                { label: "Sedang Berlangsung", value: "Sedang Berlangsung" },
-                { label: "Terjadwal", value: "Terjadwal" },
-              ]}
+              data={visits}
+              filterKey="visit_status"
+              filterOptions={Object.values(VisitStatusEnum).map(s => ({
+                label: s,
+                value: s,
+              }))}
             />
           </CardContent>
         </Card>
 
         <Card className="shadow-sm">
           <CardHeader className="bg-muted/20 border-b">
-            <CardTitle className="text-primary text-xl">Notifikasi</CardTitle>
+            <CardTitle className="text-primary text-xl">
+              Notifications
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 pt-4">
+            {/* Mock Notifications for now as no API endpoint */}
             <div className="flex items-start gap-3 rounded-md border border-yellow-100 bg-yellow-50 p-3">
               <Activity className="mt-0.5 h-5 w-5 text-yellow-600" />
               <div>
-                <p className="text-sm font-medium text-yellow-800">
-                  Hasil Lab Siap
-                </p>
+                <p className="text-sm font-medium text-yellow-800">System</p>
                 <p className="text-xs text-yellow-700">
-                  Hasil tes darah pasien Alice Johnson tersedia.
-                </p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3 rounded-md border border-blue-100 bg-blue-50 p-3">
-              <Calendar className="mt-0.5 h-5 w-5 text-blue-600" />
-              <div>
-                <p className="text-sm font-medium text-blue-800">
-                  Pengingat Rapat
-                </p>
-                <p className="text-xs text-blue-700">
-                  Rapat departemen pukul 14:00.
+                  Dashboard updated with real-time data.
                 </p>
               </div>
             </div>

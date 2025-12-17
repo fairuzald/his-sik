@@ -16,7 +16,7 @@ export default function NewPrescriptionPage() {
 
   const handleSubmit = (data: PrescriptionFormValues) => {
     console.log("Creating prescription:", data);
-    toast.success("Resep berhasil dibuat");
+    toast.success("Prescription created successfully");
     router.push("/dashboard/pharmacy/prescriptions");
   };
 
@@ -30,10 +30,10 @@ export default function NewPrescriptionPage() {
         </Button>
         <div>
           <H2 className="text-primary text-2xl font-bold tracking-tight">
-            Resep Baru
+            New Prescription
           </H2>
           <P className="text-muted-foreground text-sm">
-            Buat catatan resep baru.
+            Create a new prescription record.
           </P>
         </div>
       </div>

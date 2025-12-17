@@ -29,9 +29,9 @@ import { toast } from "sonner";
 import * as z from "zod";
 
 const labResultSchema = z.object({
-  hemoglobin: z.string().min(1, "Wajib"),
-  leukocytes: z.string().min(1, "Wajib"),
-  platelets: z.string().min(1, "Wajib"),
+  hemoglobin: z.string().min(1, "Required"),
+  leukocytes: z.string().min(1, "Required"),
+  platelets: z.string().min(1, "Required"),
 });
 
 type LabResultValues = z.infer<typeof labResultSchema>;
@@ -51,7 +51,7 @@ export default function LabOrderDetailPage() {
 
   const onSubmit = (data: LabResultValues) => {
     console.log("Lab Results:", data);
-    toast.success("Hasil lab berhasil dikirim");
+    toast.success("Lab results submitted successfully");
     router.push("/dashboard/lab/orders");
   };
 
@@ -65,7 +65,7 @@ export default function LabOrderDetailPage() {
         </Button>
         <div>
           <H2 className="text-primary text-2xl font-bold tracking-tight">
-            Proses Pesanan Lab
+            Process Lab Order
           </H2>
           <P className="text-muted-foreground">ID: {params.id}</P>
         </div>
@@ -77,7 +77,7 @@ export default function LabOrderDetailPage() {
             <Card className="shadow-sm md:col-span-2">
               <CardHeader className="bg-muted/20 border-b">
                 <CardTitle className="text-primary text-lg">
-                  Input Hasil: Hitung Darah Lengkap
+                  Input Results: Complete Blood Count
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-6">
@@ -85,9 +85,9 @@ export default function LabOrderDetailPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Parameter</TableHead>
-                      <TableHead>Rentang Referensi</TableHead>
-                      <TableHead>Nilai Hasil</TableHead>
-                      <TableHead>Satuan</TableHead>
+                      <TableHead>Reference Range</TableHead>
+                      <TableHead>Result Value</TableHead>
+                      <TableHead>Unit</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -104,7 +104,7 @@ export default function LabOrderDetailPage() {
                             <FormItem>
                               <FormControl>
                                 <Input
-                                  placeholder="Masukkan nilai"
+                                  placeholder="Enter value"
                                   className="w-32"
                                   {...field}
                                 />
@@ -119,7 +119,7 @@ export default function LabOrderDetailPage() {
                       </TableCell>
                     </TableRow>
                     <TableRow>
-                      <TableCell className="font-medium">Leukosit</TableCell>
+                      <TableCell className="font-medium">Leukocytes</TableCell>
                       <TableCell className="text-muted-foreground text-sm">
                         4.5 - 11.0
                       </TableCell>
@@ -131,7 +131,7 @@ export default function LabOrderDetailPage() {
                             <FormItem>
                               <FormControl>
                                 <Input
-                                  placeholder="Masukkan nilai"
+                                  placeholder="Enter value"
                                   className="w-32"
                                   {...field}
                                 />
@@ -146,7 +146,7 @@ export default function LabOrderDetailPage() {
                       </TableCell>
                     </TableRow>
                     <TableRow>
-                      <TableCell className="font-medium">Trombosit</TableCell>
+                      <TableCell className="font-medium">Platelets</TableCell>
                       <TableCell className="text-muted-foreground text-sm">
                         150 - 450
                       </TableCell>
@@ -158,7 +158,7 @@ export default function LabOrderDetailPage() {
                             <FormItem>
                               <FormControl>
                                 <Input
-                                  placeholder="Masukkan nilai"
+                                  placeholder="Enter value"
                                   className="w-32"
                                   {...field}
                                 />
@@ -178,10 +178,10 @@ export default function LabOrderDetailPage() {
                 <div className="bg-muted/5 mt-6 flex flex-col items-center justify-center gap-2 rounded-md border border-dashed p-4">
                   <Upload className="text-muted-foreground h-8 w-8" />
                   <p className="text-muted-foreground text-sm">
-                    Unggah hasil cetak mesin (PDF/JPG)
+                    Upload machine printout (PDF/JPG)
                   </p>
                   <Button variant="secondary" size="sm" type="button">
-                    Pilih File
+                    Select File
                   </Button>
                 </div>
               </CardContent>
@@ -191,31 +191,31 @@ export default function LabOrderDetailPage() {
               <Card className="shadow-sm">
                 <CardHeader className="bg-muted/20 border-b">
                   <CardTitle className="text-primary text-lg">
-                    Info Sampel
+                    Sample Info
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4 pt-6">
                   <div className="space-y-1">
                     <p className="text-muted-foreground text-sm font-medium">
-                      Pasien
+                      Patient
                     </p>
                     <p className="font-medium">Alice Johnson</p>
                   </div>
                   <div className="space-y-1">
                     <p className="text-muted-foreground text-sm font-medium">
-                      Prioritas
+                      Priority
                     </p>
-                    <Badge variant="outline">Rutin</Badge>
+                    <Badge variant="outline">Routine</Badge>
                   </div>
                   <div className="space-y-1">
                     <p className="text-muted-foreground text-sm font-medium">
-                      Tipe Sampel
+                      Sample Type
                     </p>
-                    <p className="font-medium">Darah Utuh (EDTA)</p>
+                    <p className="font-medium">Whole Blood (EDTA)</p>
                   </div>
                   <div className="space-y-1">
                     <p className="text-muted-foreground text-sm font-medium">
-                      Diambil Pada
+                      Collected On
                     </p>
                     <p className="font-medium">2023-11-20 09:45</p>
                   </div>
@@ -223,7 +223,7 @@ export default function LabOrderDetailPage() {
                   <div className="border-t pt-4">
                     <Button className="w-full gap-2" type="submit">
                       <Save className="h-4 w-4" />
-                      Kirim Hasil
+                      Submit Results
                     </Button>
                   </div>
                 </CardContent>

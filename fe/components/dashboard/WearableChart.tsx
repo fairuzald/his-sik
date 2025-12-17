@@ -62,7 +62,7 @@ export function WearableChart({
           </ResponsiveContainer>
         </div>
         <div className="mt-4 flex items-center justify-between">
-          <Small className="text-muted-foreground">Pembacaan Terakhir</Small>
+          <Small className="text-muted-foreground">Last Reading</Small>
           <H3 className="text-2xl font-bold">
             {data[data.length - 1]?.[dataKey]}
             <Small className="text-muted-foreground ml-1">{unit}</Small>

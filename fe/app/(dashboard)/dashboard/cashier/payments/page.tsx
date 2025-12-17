@@ -5,38 +5,76 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataTable } from "@/components/ui/data-table";
+import { safeApiCall } from "@/lib/api-handler";
+import { listInvoicesApiInvoicesGet } from "@/sdk/output/sdk.gen";
+import { InvoiceDto } from "@/sdk/output/types.gen";
 import { ColumnDef } from "@tanstack/react-table";
+import { format } from "date-fns";
+import { Loader2 } from "lucide-react";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
-type Payment = {
-  id: string;
-  invoiceId: string;
-  patient: string;
-  amount: number;
-  method: string;
-  date: string;
-  status: string;
-};
-
-const columns: ColumnDef<Payment>[] = [
-  { accessorKey: "id", header: "ID Pembayaran" },
-  { accessorKey: "invoiceId", header: "ID Faktur" },
-  { accessorKey: "patient", header: "Pasien" },
+const columns: ColumnDef<InvoiceDto>[] = [
   {
-    accessorKey: "amount",
-    header: "Jumlah",
-    cell: ({ row }) => `Rp ${row.original.amount.toLocaleString("id-ID")}`,
+    accessorKey: "id",
+    header: "Payment ID",
+    cell: ({ row }) => (
+      <span className="font-mono text-xs">
+        {row.original.id.substring(0, 8)}...
+      </span>
+    ),
   },
-  { accessorKey: "method", header: "Metode" },
-  { accessorKey: "date", header: "Tanggal" },
   {
-    accessorKey: "status",
+    header: "Invoice",
+    cell: ({ row }) => (
+      <span className="font-mono text-xs">
+        {row.original.id.substring(0, 8)}...
+      </span>
+    ),
+  },
+  {
+    header: "Patient",
+    cell: ({ row }) => (
+      <span className="text-muted-foreground text-xs">
+        {row.original.visit?.patient_id
+          ? row.original.visit.patient_id.substring(0, 8) + "..."
+          : "Unknown"}
+      </span>
+    ),
+  },
+  {
+    accessorKey: "amount_paid",
+    header: "Amount",
+    cell: ({ row }) =>
+      `Rp ${row.original.amount_paid?.toLocaleString("id-ID") || 0}`,
+  },
+  {
+    accessorKey: "payment_method",
+    header: "Method",
+    cell: ({ row }) => row.original.payment_method || "N/A",
+  },
+  {
+    accessorKey: "updated_at",
+    header: "Date",
+    cell: ({ row }) => (
+      <span>
+        {row.original.updated_at
+          ? format(new Date(row.original.updated_at), "PP")
+          : "-"}
+      </span>
+    ),
+  },
+  {
+    accessorKey: "payment_status",
     header: "Status",
     cell: ({ row }) => (
       <Badge
-        variant={row.original.status === "Sukses" ? "default" : "secondary"}
+        variant={
+          row.original.payment_status === "paid" ? "default" : "secondary"
+        }
+        className={row.original.payment_status === "paid" ? "bg-green-500" : ""}
       >
-        {row.original.status}
+        {row.original.payment_status}
       </Badge>
     ),
   },
@@ -44,45 +82,51 @@ const columns: ColumnDef<Payment>[] = [
     id: "actions",
     cell: ({ row }) => (
       <Button size="sm" variant="ghost" asChild>
-        <Link href={`/dashboard/cashier/payments/${row.original.id}`}>
-          Lihat Kwitansi
+        <Link href={`/dashboard/cashier/invoices/${row.original.id}`}>
+          View Receipt
         </Link>
       </Button>
     ),
   },
 ];
 
-const data: Payment[] = [
-  {
-    id: "PAY-001",
-    invoiceId: "INV-001",
-    patient: "Alice Johnson",
-    amount: 150000,
-    method: "Tunai",
-    date: "2023-11-20",
-    status: "Sukses",
-  },
-  {
-    id: "PAY-002",
-    invoiceId: "INV-002",
-    patient: "Bob Smith",
-    amount: 250000,
-    method: "Kartu Kredit",
-    date: "2023-11-20",
-    status: "Sukses",
-  },
-];
-
 export default function CashierPaymentsPage() {
+  const [payments, setPayments] = useState<InvoiceDto[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPayments = async () => {
+      setIsLoading(true);
+      const result = await safeApiCall(
+        listInvoicesApiInvoicesGet({ query: { limit: 100 } })
+      );
+
+      if (result && Array.isArray(result)) {
+        // Filter to show only paid invoices as "payments"
+        setPayments(result.filter(inv => inv.payment_status === "paid"));
+      }
+      setIsLoading(false);
+    };
+    fetchPayments();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8 p-2">
       <div className="flex items-center justify-between">
         <div>
           <H2 className="text-primary text-3xl font-bold tracking-tight">
-            Pembayaran
+            Payments
           </H2>
           <P className="text-muted-foreground mt-1">
-            Lihat riwayat pembayaran dan kwitansi.
+            View payment history and receipts.
           </P>
         </div>
       </div>
@@ -90,18 +134,20 @@ export default function CashierPaymentsPage() {
       <Card className="shadow-sm">
         <CardHeader className="bg-muted/20 border-b">
           <CardTitle className="text-primary text-lg">
-            Riwayat Pembayaran
+            Payment History
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-4">
           <DataTable
             columns={columns}
-            data={data}
-            searchKey="patient"
-            filterKey="status"
+            data={payments}
+            searchKey="id"
+            filterKey="payment_method"
             filterOptions={[
-              { label: "Sukses", value: "Sukses" },
-              { label: "Tertunda", value: "Tertunda" },
+              { label: "Cash", value: "cash" },
+              { label: "Card", value: "card" },
+              { label: "QRIS", value: "qris" },
+              { label: "Insurance", value: "insurance" },
             ]}
           />
         </CardContent>
