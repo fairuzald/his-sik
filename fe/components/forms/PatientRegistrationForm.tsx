@@ -197,14 +197,14 @@ export function PatientRegistrationForm({
               <SelectItem value={BloodTypeEnum.B}>B</SelectItem>
               <SelectItem value={BloodTypeEnum.AB}>AB</SelectItem>
               <SelectItem value={BloodTypeEnum.O}>O</SelectItem>
-              <SelectItem value={BloodTypeEnum["A+"]}>A+</SelectItem>
-              <SelectItem value={BloodTypeEnum["A-"]}>A-</SelectItem>
-              <SelectItem value={BloodTypeEnum["B+"]}>B+</SelectItem>
-              <SelectItem value={BloodTypeEnum["B-"]}>B-</SelectItem>
-              <SelectItem value={BloodTypeEnum["AB+"]}>AB+</SelectItem>
-              <SelectItem value={BloodTypeEnum["AB-"]}>AB-</SelectItem>
-              <SelectItem value={BloodTypeEnum["O+"]}>O+</SelectItem>
-              <SelectItem value={BloodTypeEnum["O-"]}>O-</SelectItem>
+              <SelectItem value="A+">A+</SelectItem>
+              <SelectItem value="A-">A-</SelectItem>
+              <SelectItem value="B+">B+</SelectItem>
+              <SelectItem value="B-">B-</SelectItem>
+              <SelectItem value="AB+">AB+</SelectItem>
+              <SelectItem value="AB-">AB-</SelectItem>
+              <SelectItem value="O+">O+</SelectItem>
+              <SelectItem value="O-">O-</SelectItem>
             </SelectContent>
           </Select>
         </div>

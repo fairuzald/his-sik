@@ -9,9 +9,8 @@ import { safeApiCall } from "@/lib/api-handler";
 import {
   getMyProfileApiProfileMeGet,
   listClinicsApiClinicsGet,
-  listDevicesApiWearablesDevicesGet,
   listInvoicesApiInvoicesGet,
-  listMeasurementsApiWearablesDevicesDeviceIdMeasurementsGet,
+  listMeasurementsApiWearablesMeasurementsGet,
   listPrescriptionsApiPrescriptionsGet,
   listVisitsApiVisitsGet,
 } from "@/sdk/output/sdk.gen";
@@ -76,28 +75,22 @@ export default function PatientDashboard() {
         setPrescriptions(prescriptionsData);
       }
 
-      // 6. Fetch Wearables (Try to get first device and its measurements)
-      const devices = await safeApiCall(listDevicesApiWearablesDevicesGet());
-      if (devices && devices.length > 0) {
-        const firstDevice = devices[0];
-        const measurements = await safeApiCall(
-          listMeasurementsApiWearablesDevicesDeviceIdMeasurementsGet({
-            path: { device_id: firstDevice.id },
-          })
-        );
-        if (measurements) {
-          // Transform for chart
-          const chartData = measurements
-            .map((m: WearableMeasurementDto) => ({
-              time: m.recorded_at
-                ? format(new Date(m.recorded_at), "HH:mm")
-                : "",
-              value: m.heart_rate || 0,
-            }))
-            .filter(d => d.value > 0)
-            .slice(-10); // Last 10 points
-          setHeartRateData(chartData);
-        }
+      // 6. Fetch Wearables measurements
+      const measurements = await safeApiCall(
+        listMeasurementsApiWearablesMeasurementsGet({
+          query: { limit: 10 },
+        })
+      );
+      if (measurements) {
+        // Transform for chart
+        const chartData = measurements
+          .map((m: WearableMeasurementDto) => ({
+            time: m.recorded_at ? format(new Date(m.recorded_at), "HH:mm") : "",
+            value: m.heart_rate || 0,
+          }))
+          .filter(d => d.value > 0)
+          .slice(-10); // Last 10 points
+        setHeartRateData(chartData);
       }
 
       setIsLoading(false);

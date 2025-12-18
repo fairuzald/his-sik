@@ -5,7 +5,7 @@
 
 -- Drop existing tables
 DROP TABLE IF EXISTS wearable_measurements CASCADE;
-DROP TABLE IF EXISTS wearable_devices CASCADE;
+
 DROP TABLE IF EXISTS referrals CASCADE;
 DROP TABLE IF EXISTS invoice_items CASCADE;
 DROP TABLE IF EXISTS invoices CASCADE;
@@ -450,28 +450,15 @@ CREATE TABLE invoice_items (
     CONSTRAINT invoice_items_invoice_id_fkey FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE CASCADE
 );
 
-CREATE TABLE wearable_devices (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    patient_id UUID NOT NULL,
-    device_identifier VARCHAR(100) NOT NULL UNIQUE, -- Serial number atau MAC address device
-    device_name VARCHAR(100), -- Nama device: "Apple Watch Series 8", "Xiaomi Mi Band 7"
-    device_type VARCHAR(50), -- Tipe: "Smartwatch", "Fitness Band", "Blood Pressure Monitor"
-    is_active BOOLEAN NOT NULL DEFAULT TRUE, -- Device masih aktif digunakan
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    CONSTRAINT wearable_devices_patient_id_fkey FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE
-);
+
 
 CREATE TABLE wearable_measurements (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    device_id UUID NOT NULL,
+    patient_id UUID NOT NULL,
     recorded_at TIMESTAMPTZ NOT NULL, -- Waktu pengukuran dari device
     heart_rate INTEGER, -- Detak jantung (bpm): 60-100 normal
-    systolic_bp INTEGER, -- Tekanan darah sistolik: 120 normal
-    diastolic_bp INTEGER, -- Tekanan darah diastolik: 80 normal
     body_temperature NUMERIC(4,1), -- Suhu tubuh (°C): 36.5-37.5 normal
-    steps INTEGER, -- Jumlah langkah
     spo2 INTEGER, -- Saturasi oksigen darah (%): 95-100 normal
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    CONSTRAINT wearable_measurements_device_id_fkey FOREIGN KEY (device_id) REFERENCES wearable_devices(id) ON DELETE CASCADE
+    CONSTRAINT wearable_measurements_patient_id_fkey FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE
 );

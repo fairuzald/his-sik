@@ -466,6 +466,7 @@ export const zStaffProfileDao = z.object({
 });
 
 export const zDoctorProfileDao = z.object({
+    id: z.string().uuid(),
     specialty: z.union([
         z.string(),
         z.null()
@@ -576,46 +577,9 @@ export const zApiResponseVisitDto = z.object({
     ]).optional()
 });
 
-export const zWearableDeviceDto = z.object({
-    device_identifier: z.string(),
-    device_name: z.union([
-        z.string(),
-        z.null()
-    ]).optional(),
-    device_type: z.union([
-        z.string(),
-        z.null()
-    ]).optional(),
-    is_active: z.boolean().optional().default(true),
-    id: z.string().uuid(),
-    patient_id: z.string().uuid(),
-    created_at: z.string().datetime(),
-    updated_at: z.string().datetime()
-});
-
-export const zApiResponseWearableDeviceDto = z.object({
-    success: z.boolean(),
-    data: z.union([
-        zWearableDeviceDto,
-        z.null()
-    ]).optional(),
-    message: z.union([
-        z.string(),
-        z.null()
-    ]).optional()
-});
-
 export const zWearableMeasurementDto = z.object({
     recorded_at: z.string().datetime(),
     heart_rate: z.union([
-        z.number().int(),
-        z.null()
-    ]).optional(),
-    systolic_bp: z.union([
-        z.number().int(),
-        z.null()
-    ]).optional(),
-    diastolic_bp: z.union([
         z.number().int(),
         z.null()
     ]).optional(),
@@ -623,16 +587,12 @@ export const zWearableMeasurementDto = z.object({
         z.number(),
         z.null()
     ]).optional(),
-    steps: z.union([
-        z.number().int(),
-        z.null()
-    ]).optional(),
     spo2: z.union([
         z.number().int(),
         z.null()
     ]).optional(),
     id: z.string().uuid(),
-    device_id: z.string().uuid(),
+    patient_id: z.string().uuid(),
     created_at: z.string().datetime()
 });
 
@@ -1169,22 +1129,6 @@ export const zPaginatedApiResponseListVisitDto = z.object({
     ])
 });
 
-export const zPaginatedApiResponseListWearableDeviceDto = z.object({
-    success: z.boolean(),
-    data: z.union([
-        z.array(zWearableDeviceDto),
-        z.null()
-    ]).optional(),
-    message: z.union([
-        z.string(),
-        z.null()
-    ]).optional(),
-    meta: z.union([
-        zPaginationMetaModel,
-        z.object({})
-    ])
-});
-
 export const zPaginatedApiResponseListWearableMeasurementDto = z.object({
     success: z.boolean(),
     data: z.union([
@@ -1505,54 +1449,14 @@ export const zVisitUpdateDto = z.object({
     ]).optional()
 });
 
-export const zWearableDeviceCreateDto = z.object({
-    device_identifier: z.string(),
-    device_name: z.union([
-        z.string(),
-        z.null()
-    ]).optional(),
-    device_type: z.union([
-        z.string(),
-        z.null()
-    ]).optional(),
-    is_active: z.boolean().optional().default(true)
-});
-
-export const zWearableDeviceUpdateDto = z.object({
-    device_name: z.union([
-        z.string(),
-        z.null()
-    ]).optional(),
-    device_type: z.union([
-        z.string(),
-        z.null()
-    ]).optional(),
-    is_active: z.union([
-        z.boolean(),
-        z.null()
-    ]).optional()
-});
-
 export const zWearableMeasurementCreateDto = z.object({
     recorded_at: z.string().datetime(),
     heart_rate: z.union([
         z.number().int(),
         z.null()
     ]).optional(),
-    systolic_bp: z.union([
-        z.number().int(),
-        z.null()
-    ]).optional(),
-    diastolic_bp: z.union([
-        z.number().int(),
-        z.null()
-    ]).optional(),
     body_temperature: z.union([
         z.number(),
-        z.null()
-    ]).optional(),
-    steps: z.union([
-        z.number().int(),
         z.null()
     ]).optional(),
     spo2: z.union([
@@ -1679,16 +1583,6 @@ export const zGetInvoiceApiInvoicesInvoiceIdGetResponse = zApiResponseInvoiceDto
 
 export const zUpdateInvoiceApiInvoicesInvoiceIdPatchResponse = zApiResponseInvoiceDto;
 
-export const zListDevicesApiWearablesDevicesGetResponse = zPaginatedApiResponseListWearableDeviceDto;
+export const zListMeasurementsApiWearablesMeasurementsGetResponse = zPaginatedApiResponseListWearableMeasurementDto;
 
-export const zCreateDeviceApiWearablesDevicesPostResponse = zApiResponseWearableDeviceDto;
-
-export const zDeleteDeviceApiWearablesDevicesDeviceIdDeleteResponse = zApiResponse;
-
-export const zGetDeviceApiWearablesDevicesDeviceIdGetResponse = zApiResponseWearableDeviceDto;
-
-export const zUpdateDeviceApiWearablesDevicesDeviceIdPatchResponse = zApiResponseWearableDeviceDto;
-
-export const zListMeasurementsApiWearablesDevicesDeviceIdMeasurementsGetResponse = zPaginatedApiResponseListWearableMeasurementDto;
-
-export const zAddMeasurementApiWearablesDevicesDeviceIdMeasurementsPostResponse = zApiResponseWearableMeasurementDto;
+export const zAddMeasurementApiWearablesMeasurementsPostResponse = zApiResponseWearableMeasurementDto;

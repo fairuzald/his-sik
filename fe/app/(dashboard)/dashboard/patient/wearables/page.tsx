@@ -5,20 +5,15 @@ import { H2, P } from "@/components/elements/typography";
 import { Button } from "@/components/ui/button";
 import { safeApiCall } from "@/lib/api-handler";
 import {
-  addMeasurementApiWearablesDevicesDeviceIdMeasurementsPost,
-  listDevicesApiWearablesDevicesGet,
-  listMeasurementsApiWearablesDevicesDeviceIdMeasurementsGet,
+  addMeasurementApiWearablesMeasurementsPost,
+  listMeasurementsApiWearablesMeasurementsGet,
 } from "@/sdk/output/sdk.gen";
-import {
-  WearableDeviceDto,
-  WearableMeasurementDto,
-} from "@/sdk/output/types.gen";
+import { WearableMeasurementDto } from "@/sdk/output/types.gen";
 import { format } from "date-fns";
-import { Loader2, RefreshCw, Watch } from "lucide-react";
+import { Activity, Loader2, Plus } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
 export default function PatientWearablesPage() {
-  const [device, setDevice] = useState<WearableDeviceDto | null>(null);
   const [measurements, setMeasurements] = useState<WearableMeasurementDto[]>(
     []
   );
@@ -26,23 +21,14 @@ export default function PatientWearablesPage() {
   const [isSyncing, setIsSyncing] = useState(false);
 
   const fetchData = useCallback(async () => {
-    // 1. Get Devices (Assuming single user device for now)
-    const devicesList = await safeApiCall(listDevicesApiWearablesDevicesGet());
+    const result = await safeApiCall(
+      listMeasurementsApiWearablesMeasurementsGet({
+        query: { limit: 100 },
+      })
+    );
 
-    if (devicesList && devicesList.length > 0) {
-      const firstDevice = devicesList[0];
-      setDevice(firstDevice);
-
-      // 2. Get Measurements
-      const measurementsList = await safeApiCall(
-        listMeasurementsApiWearablesDevicesDeviceIdMeasurementsGet({
-          path: { device_id: firstDevice.id },
-        })
-      );
-
-      if (measurementsList) {
-        setMeasurements(measurementsList);
-      }
+    if (result) {
+      setMeasurements(result);
     }
     setIsLoading(false);
   }, []);
@@ -51,25 +37,26 @@ export default function PatientWearablesPage() {
     fetchData();
   }, [fetchData]);
 
-  const handleSync = async () => {
-    if (!device) return;
+  const handleAddMeasurement = async () => {
     setIsSyncing(true);
 
-    // Simulate syncing/adding a new random heart rate measurement for demo purposes
-    // In real app, this would trigger a device sync process
+    // Simulate adding a measurement with random values for demo
     const fakeHeartRate = Math.floor(Math.random() * (100 - 60 + 1) + 60);
+    const fakeTemp = (Math.random() * (37.5 - 36.0) + 36.0).toFixed(1);
+    const fakeSpo2 = Math.floor(Math.random() * (100 - 95 + 1) + 95);
 
     await safeApiCall(
-      addMeasurementApiWearablesDevicesDeviceIdMeasurementsPost({
-        path: { device_id: device.id },
+      addMeasurementApiWearablesMeasurementsPost({
         body: {
-          heart_rate: fakeHeartRate,
           recorded_at: new Date().toISOString(),
+          heart_rate: fakeHeartRate,
+          body_temperature: parseFloat(fakeTemp),
+          spo2: fakeSpo2,
         },
       }),
       {
-        successMessage: "Device synced successfully",
-        errorMessage: "Sync failed",
+        successMessage: "Measurement added successfully",
+        errorMessage: "Failed to add measurement",
       }
     );
 
@@ -94,54 +81,61 @@ export default function PatientWearablesPage() {
     }))
     .slice(-20); // Last 20
 
-  const activityData = measurements
-    .filter(m => m.steps)
+  const temperatureData = measurements
+    .filter(m => m.body_temperature)
     .map(m => ({
-      time: m.recorded_at ? format(new Date(m.recorded_at), "dd/MM") : "",
-      value: m.steps || 0,
+      time: m.recorded_at ? format(new Date(m.recorded_at), "HH:mm") : "",
+      value: m.body_temperature || 0,
     }))
-    .slice(-7); // Last 7
+    .slice(-20);
 
-  const sleepData: { time: string; value: number }[] = [];
-  // Sleep data not available in SDK currently
+  const spo2Data = measurements
+    .filter(m => m.spo2)
+    .map(m => ({
+      time: m.recorded_at ? format(new Date(m.recorded_at), "HH:mm") : "",
+      value: m.spo2 || 0,
+    }))
+    .slice(-20);
 
   return (
     <div className="space-y-8 p-2">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <H2 className="text-primary text-3xl font-bold tracking-tight">
-            Wearable Data
+            Data Wearable
           </H2>
           <P className="text-muted-foreground mt-1">
-            Real-time health metrics from your connected devices.
+            Metrik kesehatan real-time dari perangkat Anda.
           </P>
         </div>
         <Button
           variant="outline"
           className="w-full gap-2 md:w-auto"
-          onClick={handleSync}
-          disabled={!device || isSyncing}
+          onClick={handleAddMeasurement}
+          disabled={isSyncing}
         >
           {isSyncing ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
-            <RefreshCw className="h-4 w-4" />
+            <Plus className="h-4 w-4" />
           )}
-          Sync Device
+          Tambah Pengukuran
         </Button>
       </div>
 
-      {!device ? (
+      {measurements.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-10 text-center">
-          <Watch className="text-muted-foreground mb-4 h-10 w-10" />
-          <H2 className="text-lg">No Devices Connected</H2>
-          <P className="mb-4">Connect a wearable device to start tracking.</P>
-          <Button variant="default">Add Device</Button>
+          <Activity className="text-muted-foreground mb-4 h-10 w-10" />
+          <H2 className="text-lg">Belum Ada Data</H2>
+          <P className="mb-4">Tambahkan pengukuran pertama Anda.</P>
+          <Button variant="default" onClick={handleAddMeasurement}>
+            Tambah Pengukuran
+          </Button>
         </div>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           <WearableChart
-            title="Heart Rate"
+            title="Detak Jantung"
             data={
               heartRateData.length > 0
                 ? heartRateData
@@ -152,28 +146,23 @@ export default function PatientWearablesPage() {
             unit=" bpm"
           />
           <WearableChart
-            title="Activity (Steps)"
+            title="Suhu Tubuh"
             data={
-              activityData.length > 0
-                ? activityData
-                : [{ time: "Today", value: 0 }]
+              temperatureData.length > 0
+                ? temperatureData
+                : [{ time: "Now", value: 0 }]
             }
             dataKey="value"
-            color="#10b981"
-            unit=" steps"
+            color="#f97316"
+            unit=" °C"
           />
           <WearableChart
-            title="Sleep"
-            data={
-              sleepData.length > 0
-                ? sleepData
-                : [{ time: "Last Night", value: 0 }]
-            }
+            title="SpO2"
+            data={spo2Data.length > 0 ? spo2Data : [{ time: "Now", value: 0 }]}
             dataKey="value"
-            color="#6366f1"
-            unit=" hrs"
+            color="#3b82f6"
+            unit=" %"
           />
-          {/* Can add more or keep 'Connect New' placeholder if multiple devices support intended */}
         </div>
       )}
     </div>

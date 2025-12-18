@@ -67,7 +67,6 @@ from backend.module.visit.entity.visit import Visit  # noqa: F401
 
 # Wearable
 from backend.module.wearable.entity.wearable import (  # noqa: F401
-    WearableDevice,
     WearableMeasurement,
 )
 

@@ -455,39 +455,6 @@ export const ApiResponse_VisitDTO_Schema = {
     title: 'ApiResponse[VisitDTO]'
 } as const;
 
-export const ApiResponse_WearableDeviceDTO_Schema = {
-    properties: {
-        success: {
-            type: 'boolean',
-            title: 'Success'
-        },
-        data: {
-            anyOf: [
-                {
-                    '$ref': '#/components/schemas/WearableDeviceDTO'
-                },
-                {
-                    type: 'null'
-                }
-            ]
-        },
-        message: {
-            anyOf: [
-                {
-                    type: 'string'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Message'
-        }
-    },
-    type: 'object',
-    required: ['success'],
-    title: 'ApiResponse[WearableDeviceDTO]'
-} as const;
-
 export const ApiResponse_WearableMeasurementDTO_Schema = {
     properties: {
         success: {
@@ -937,6 +904,11 @@ export const CreateUserDTOSchema = {
 
 export const DoctorProfileDAOSchema = {
     properties: {
+        id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Id'
+        },
         specialty: {
             anyOf: [
                 {
@@ -973,6 +945,7 @@ export const DoctorProfileDAOSchema = {
     },
     additionalProperties: false,
     type: 'object',
+    required: ['id'],
     title: 'DoctorProfileDAO'
 } as const;
 
@@ -2703,55 +2676,6 @@ export const PaginatedApiResponse_List_VisitDTO__Schema = {
     title: 'PaginatedApiResponse[List[VisitDTO]]'
 } as const;
 
-export const PaginatedApiResponse_List_WearableDeviceDTO__Schema = {
-    properties: {
-        success: {
-            type: 'boolean',
-            title: 'Success'
-        },
-        data: {
-            anyOf: [
-                {
-                    items: {
-                        '$ref': '#/components/schemas/WearableDeviceDTO'
-                    },
-                    type: 'array'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Data'
-        },
-        message: {
-            anyOf: [
-                {
-                    type: 'string'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Message'
-        },
-        meta: {
-            anyOf: [
-                {
-                    '$ref': '#/components/schemas/PaginationMetaModel'
-                },
-                {
-                    additionalProperties: true,
-                    type: 'object'
-                }
-            ],
-            title: 'Meta'
-        }
-    },
-    type: 'object',
-    required: ['success', 'meta'],
-    title: 'PaginatedApiResponse[List[WearableDeviceDTO]]'
-} as const;
-
 export const PaginatedApiResponse_List_WearableMeasurementDTO__Schema = {
     properties: {
         success: {
@@ -4328,144 +4252,6 @@ export const VisitUpdateDTOSchema = {
     title: 'VisitUpdateDTO'
 } as const;
 
-export const WearableDeviceCreateDTOSchema = {
-    properties: {
-        device_identifier: {
-            type: 'string',
-            title: 'Device Identifier'
-        },
-        device_name: {
-            anyOf: [
-                {
-                    type: 'string'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Device Name'
-        },
-        device_type: {
-            anyOf: [
-                {
-                    type: 'string'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Device Type'
-        },
-        is_active: {
-            type: 'boolean',
-            title: 'Is Active',
-            default: true
-        }
-    },
-    type: 'object',
-    required: ['device_identifier'],
-    title: 'WearableDeviceCreateDTO'
-} as const;
-
-export const WearableDeviceDTOSchema = {
-    properties: {
-        device_identifier: {
-            type: 'string',
-            title: 'Device Identifier'
-        },
-        device_name: {
-            anyOf: [
-                {
-                    type: 'string'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Device Name'
-        },
-        device_type: {
-            anyOf: [
-                {
-                    type: 'string'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Device Type'
-        },
-        is_active: {
-            type: 'boolean',
-            title: 'Is Active',
-            default: true
-        },
-        id: {
-            type: 'string',
-            format: 'uuid',
-            title: 'Id'
-        },
-        patient_id: {
-            type: 'string',
-            format: 'uuid',
-            title: 'Patient Id'
-        },
-        created_at: {
-            type: 'string',
-            format: 'date-time',
-            title: 'Created At'
-        },
-        updated_at: {
-            type: 'string',
-            format: 'date-time',
-            title: 'Updated At'
-        }
-    },
-    type: 'object',
-    required: ['device_identifier', 'id', 'patient_id', 'created_at', 'updated_at'],
-    title: 'WearableDeviceDTO'
-} as const;
-
-export const WearableDeviceUpdateDTOSchema = {
-    properties: {
-        device_name: {
-            anyOf: [
-                {
-                    type: 'string'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Device Name'
-        },
-        device_type: {
-            anyOf: [
-                {
-                    type: 'string'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Device Type'
-        },
-        is_active: {
-            anyOf: [
-                {
-                    type: 'boolean'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Is Active'
-        }
-    },
-    type: 'object',
-    title: 'WearableDeviceUpdateDTO'
-} as const;
-
 export const WearableMeasurementCreateDTOSchema = {
     properties: {
         recorded_at: {
@@ -4484,28 +4270,6 @@ export const WearableMeasurementCreateDTOSchema = {
             ],
             title: 'Heart Rate'
         },
-        systolic_bp: {
-            anyOf: [
-                {
-                    type: 'integer'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Systolic Bp'
-        },
-        diastolic_bp: {
-            anyOf: [
-                {
-                    type: 'integer'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Diastolic Bp'
-        },
         body_temperature: {
             anyOf: [
                 {
@@ -4516,17 +4280,6 @@ export const WearableMeasurementCreateDTOSchema = {
                 }
             ],
             title: 'Body Temperature'
-        },
-        steps: {
-            anyOf: [
-                {
-                    type: 'integer'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Steps'
         },
         spo2: {
             anyOf: [
@@ -4563,28 +4316,6 @@ export const WearableMeasurementDTOSchema = {
             ],
             title: 'Heart Rate'
         },
-        systolic_bp: {
-            anyOf: [
-                {
-                    type: 'integer'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Systolic Bp'
-        },
-        diastolic_bp: {
-            anyOf: [
-                {
-                    type: 'integer'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Diastolic Bp'
-        },
         body_temperature: {
             anyOf: [
                 {
@@ -4595,17 +4326,6 @@ export const WearableMeasurementDTOSchema = {
                 }
             ],
             title: 'Body Temperature'
-        },
-        steps: {
-            anyOf: [
-                {
-                    type: 'integer'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Steps'
         },
         spo2: {
             anyOf: [
@@ -4623,10 +4343,10 @@ export const WearableMeasurementDTOSchema = {
             format: 'uuid',
             title: 'Id'
         },
-        device_id: {
+        patient_id: {
             type: 'string',
             format: 'uuid',
-            title: 'Device Id'
+            title: 'Patient Id'
         },
         created_at: {
             type: 'string',
@@ -4635,6 +4355,6 @@ export const WearableMeasurementDTOSchema = {
         }
     },
     type: 'object',
-    required: ['recorded_at', 'id', 'device_id', 'created_at'],
+    required: ['recorded_at', 'id', 'patient_id', 'created_at'],
     title: 'WearableMeasurementDTO'
 } as const;

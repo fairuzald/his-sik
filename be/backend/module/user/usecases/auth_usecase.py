@@ -60,13 +60,13 @@ class AuthUseCase:
     async def login(self, req: LoginDTO) -> TokenDAO:
         user = await self.user_repository.get_user_by_username(req.username)
         if not user:
-            raise AuthenticationException("Invalid username or password")
+            raise BusinessLogicException("Invalid username or password")
 
         if not verify_password(req.password, user.password_hash):
-            raise AuthenticationException("Invalid username or password")
+            raise BusinessLogicException("Invalid username or password")
 
         if not user.is_active:
-            raise AuthenticationException("User is inactive")
+            raise BusinessLogicException("User is inactive")
 
         # Get profile claims for the token
         claims = await self._get_profile_claims(user.id, user.role)

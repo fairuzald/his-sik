@@ -13,6 +13,7 @@ import {
   Database,
   FileText,
   Heart,
+  LayoutDashboard,
   Shield,
   Stethoscope,
   TrendingUp,
@@ -20,6 +21,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 const features = [
   {
@@ -133,6 +135,30 @@ const stats = [
 ];
 
 export default function LandingPage() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    // Check if user is logged in by checking for access token in cookies
+    const checkAuth = () => {
+      // Read cookie by name
+      const getCookie = (name: string) => {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop()?.split(";").shift();
+        return null;
+      };
+
+      const token = getCookie("access_token");
+      setIsLoggedIn(!!token);
+    };
+
+    checkAuth();
+
+    // Check periodically in case cookie changes
+    const interval = setInterval(checkAuth, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <div className="bg-background min-h-screen">
       {/* Decorative Background */}
@@ -160,12 +186,23 @@ export default function LandingPage() {
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <Button variant="ghost" asChild>
-              <Link href="/login">Masuk</Link>
-            </Button>
-            <Button asChild className="shadow-md">
-              <Link href="/login">Mulai</Link>
-            </Button>
+            {isLoggedIn ? (
+              <Button asChild className="gap-2 shadow-md">
+                <Link href="/dashboard">
+                  <LayoutDashboard className="h-4 w-4" />
+                  Dashboard
+                </Link>
+              </Button>
+            ) : (
+              <>
+                <Button variant="ghost" asChild>
+                  <Link href="/login">Masuk</Link>
+                </Button>
+                <Button asChild className="shadow-md">
+                  <Link href="/login">Mulai</Link>
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </nav>

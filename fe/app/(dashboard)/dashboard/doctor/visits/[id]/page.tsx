@@ -3,12 +3,11 @@
 import { LabOrderTab } from "@/components/dashboard/doctor/visit-detail/LabOrderTab";
 import { MedicalRecordTab } from "@/components/dashboard/doctor/visit-detail/MedicalRecordTab";
 import { PrescriptionTab } from "@/components/dashboard/doctor/visit-detail/PrescriptionTab";
-import { WearableChart } from "@/components/dashboard/WearableChart";
+import { WearableDataTab } from "@/components/dashboard/doctor/visit-detail/WearableDataTab";
 import { H2, P } from "@/components/elements/typography";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { heartRateData, spo2Data } from "@/data/mock-data";
 import { safeApiCall } from "@/lib/api-handler";
 import {
   getVisitApiVisitsVisitIdGet,
@@ -215,22 +214,7 @@ export default function DoctorVisitDetailPage() {
         </TabsContent>
 
         <TabsContent value="wearables">
-          <div className="grid gap-6 md:grid-cols-2">
-            <WearableChart
-              title="Heart Rate (24h)"
-              data={heartRateData}
-              dataKey="value"
-              color="#ef4444"
-              unit=" bpm"
-            />
-            <WearableChart
-              title="SpO2 (24h)"
-              data={spo2Data}
-              dataKey="value"
-              color="#3b82f6"
-              unit="%"
-            />
-          </div>
+          <WearableDataTab patientId={visit.patient_id} />
         </TabsContent>
       </Tabs>
     </div>
