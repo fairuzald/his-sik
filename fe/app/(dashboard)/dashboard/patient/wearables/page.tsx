@@ -37,6 +37,7 @@ export default function PatientWearablesPage() {
     fetchData();
   }, [fetchData]);
 
+  // TODO: Integrate wearable here
   const handleAddMeasurement = async () => {
     setIsSyncing(true);
 

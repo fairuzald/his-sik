@@ -1,7 +1,6 @@
 "use client";
 
 import { Sidebar } from "@/components/dashboard/Sidebar";
-import { Span } from "@/components/elements/typography";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { logoutApiAuthLogoutPost } from "@/sdk/output/sdk.gen";
 import Cookies from "js-cookie";
-import { Bell, Menu, Search } from "lucide-react";
+import { Menu, Search } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -72,11 +71,6 @@ export function Topbar() {
         </div>
       </div>
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-4 w-4" />
-          <Span className="bg-destructive absolute right-2 top-2 h-2 w-2 rounded-full" />
-          <Span className="sr-only">Notifications</Span>
-        </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="rounded-full">
