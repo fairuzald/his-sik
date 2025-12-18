@@ -11,7 +11,7 @@ class WearableMeasurement(Base):
     __tablename__ = "wearable_measurements"
 
     id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    patient_id = Column(PG_UUID(as_uuid=True), ForeignKey("patients.id", ondelete="CASCADE"), nullable=False)
+    device_api_key = Column(PG_UUID(as_uuid=True), ForeignKey("patients.device_api_key", ondelete="CASCADE"), nullable=False)
     recorded_at = Column(DateTime(timezone=True), nullable=False)
     heart_rate = Column(Integer, nullable=True)
     body_temperature = Column(Numeric(4, 1), nullable=True)

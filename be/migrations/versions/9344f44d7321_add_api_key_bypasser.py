@@ -1,8 +1,8 @@
-"""migrate_constraint
+"""add_api_key_bypasser
 
-Revision ID: e528f0b939f5
+Revision ID: 9344f44d7321
 Revises: 
-Create Date: 2025-12-17 17:36:23.489970
+Create Date: 2025-12-18 05:45:54.835432
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = 'e528f0b939f5'
+revision: str = '9344f44d7321'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -82,6 +82,7 @@ def upgrade() -> None:
     op.create_table('patients',
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('user_id', sa.UUID(), nullable=False),
+    sa.Column('device_api_key', sa.UUID(), nullable=True),
     sa.Column('nik', sa.String(length=16), nullable=False),
     sa.Column('bpjs_number', sa.String(length=20), nullable=True),
     sa.Column('date_of_birth', sa.Date(), nullable=False),
@@ -92,6 +93,7 @@ def upgrade() -> None:
     sa.Column('emergency_contact_phone', sa.String(length=20), nullable=True),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('device_api_key'),
     sa.UniqueConstraint('nik'),
     sa.UniqueConstraint('user_id')
     )
@@ -134,18 +136,16 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['registration_staff_id'], ['staff.id'], ondelete='SET NULL'),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_table('wearable_devices',
+    op.create_table('wearable_measurements',
     sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('patient_id', sa.UUID(), nullable=False),
-    sa.Column('device_identifier', sa.String(length=100), nullable=False),
-    sa.Column('device_name', sa.String(length=100), nullable=True),
-    sa.Column('device_type', sa.String(length=50), nullable=True),
-    sa.Column('is_active', sa.Boolean(), nullable=False),
+    sa.Column('device_api_key', sa.UUID(), nullable=False),
+    sa.Column('recorded_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('heart_rate', sa.Integer(), nullable=True),
+    sa.Column('body_temperature', sa.Numeric(precision=4, scale=1), nullable=True),
+    sa.Column('spo2', sa.Integer(), nullable=True),
     sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
-    sa.ForeignKeyConstraint(['patient_id'], ['patients.id'], ondelete='CASCADE'),
-    sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('device_identifier')
+    sa.ForeignKeyConstraint(['device_api_key'], ['patients.device_api_key'], ondelete='CASCADE'),
+    sa.PrimaryKeyConstraint('id')
     )
     op.create_table('invoices',
     sa.Column('id', sa.UUID(), nullable=False),
@@ -228,20 +228,6 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['visit_id'], ['visits.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_table('wearable_measurements',
-    sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('device_id', sa.UUID(), nullable=False),
-    sa.Column('recorded_at', sa.DateTime(timezone=True), nullable=False),
-    sa.Column('heart_rate', sa.Integer(), nullable=True),
-    sa.Column('systolic_bp', sa.Integer(), nullable=True),
-    sa.Column('diastolic_bp', sa.Integer(), nullable=True),
-    sa.Column('body_temperature', sa.Numeric(precision=4, scale=1), nullable=True),
-    sa.Column('steps', sa.Integer(), nullable=True),
-    sa.Column('spo2', sa.Integer(), nullable=True),
-    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
-    sa.ForeignKeyConstraint(['device_id'], ['wearable_devices.id'], ondelete='CASCADE'),
-    sa.PrimaryKeyConstraint('id')
-    )
     op.create_table('invoice_items',
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('invoice_id', sa.UUID(), nullable=False),
@@ -288,13 +274,12 @@ def downgrade() -> None:
     op.drop_table('prescription_items')
     op.drop_table('lab_results')
     op.drop_table('invoice_items')
-    op.drop_table('wearable_measurements')
     op.drop_table('referrals')
     op.drop_table('prescriptions')
     op.drop_table('medical_records')
     op.drop_table('lab_orders')
     op.drop_table('invoices')
-    op.drop_table('wearable_devices')
+    op.drop_table('wearable_measurements')
     op.drop_table('visits')
     op.drop_table('user_sessions')
     op.drop_table('staff')

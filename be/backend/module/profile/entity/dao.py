@@ -24,6 +24,7 @@ class DoctorProfileDAO(BaseResponseSchema):
 
 class PatientProfileDAO(BaseResponseSchema):
     nik: str
+    device_api_key: Optional[UUID] = None
     bpjs_number: Optional[str] = None
     date_of_birth: date
     gender: GenderEnum

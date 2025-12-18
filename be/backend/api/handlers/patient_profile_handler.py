@@ -1,3 +1,6 @@
+from fastapi import Depends
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from backend.infrastructure.database.session import get_db
 from backend.module.profile.entity.dto import UpdatePatientProfileDTO
 from backend.module.profile.repositories.profile_repository import ProfileRepository
@@ -5,8 +8,6 @@ from backend.module.profile.usecases.profile_usecase import ProfileUseCase
 from backend.module.user.entity.user import User
 from backend.module.user.repositories.user_repository import UserRepository
 from backend.pkg.core.response import response_factory
-from fastapi import Depends
-from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class PatientProfileHandler:
@@ -22,3 +23,8 @@ class PatientProfileHandler:
     ):
         result = await self.usecase.update_patient_profile(user, req)
         return response_factory.success(result)
+
+    async def regenerate_device_api_key(self, user: User):
+        """Regenerate device API key for the patient."""
+        result = await self.usecase.regenerate_device_api_key(user)
+        return response_factory.success(result, message="Device API key regenerated successfully")

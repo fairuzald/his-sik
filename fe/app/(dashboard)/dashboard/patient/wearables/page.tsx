@@ -6,9 +6,13 @@ import { Button } from "@/components/ui/button";
 import { safeApiCall } from "@/lib/api-handler";
 import {
   addMeasurementApiWearablesMeasurementsPost,
+  getMyProfileApiProfileMeGet,
   listMeasurementsApiWearablesMeasurementsGet,
 } from "@/sdk/output/sdk.gen";
-import { WearableMeasurementDto } from "@/sdk/output/types.gen";
+import {
+  PatientProfileDao,
+  WearableMeasurementDto,
+} from "@/sdk/output/types.gen";
 import { format } from "date-fns";
 import { Activity, Loader2, Plus } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
@@ -19,11 +23,31 @@ export default function PatientWearablesPage() {
   );
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [patientId, setPatientId] = useState<string | null>(null);
+  const [deviceApiKey, setDeviceApiKey] = useState<string | null>(null);
+
+  // Fetch patient profile to get patient_id and device_api_key
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const profile = await safeApiCall(getMyProfileApiProfileMeGet());
+      if (profile && profile.details) {
+        const patientDetails = profile.details as PatientProfileDao;
+        setPatientId(profile.id); // Patient ID is at the UserProfileDao level
+        setDeviceApiKey(patientDetails.device_api_key || null);
+      }
+    };
+    fetchProfile();
+  }, []);
 
   const fetchData = useCallback(async () => {
+    if (!patientId) return;
+
     const result = await safeApiCall(
       listMeasurementsApiWearablesMeasurementsGet({
-        query: { limit: 100 },
+        query: {
+          patient_id: patientId,
+          limit: 100,
+        },
       })
     );
 
@@ -31,14 +55,21 @@ export default function PatientWearablesPage() {
       setMeasurements(result);
     }
     setIsLoading(false);
-  }, []);
+  }, [patientId]);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if (patientId) {
+      fetchData();
+    }
+  }, [fetchData, patientId]);
 
   // TODO: Integrate wearable here
   const handleAddMeasurement = async () => {
+    if (!deviceApiKey) {
+      alert("Please generate a device API key in your profile first!");
+      return;
+    }
+
     setIsSyncing(true);
 
     // Simulate adding a measurement with random values for demo
@@ -49,6 +80,7 @@ export default function PatientWearablesPage() {
     await safeApiCall(
       addMeasurementApiWearablesMeasurementsPost({
         body: {
+          device_api_key: deviceApiKey,
           recorded_at: new Date().toISOString(),
           heart_rate: fakeHeartRate,
           body_temperature: parseFloat(fakeTemp),

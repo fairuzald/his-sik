@@ -503,6 +503,10 @@ export const zBloodTypeEnum = z.enum([
 
 export const zPatientProfileDao = z.object({
     nik: z.string(),
+    device_api_key: z.union([
+        z.string().uuid(),
+        z.null()
+    ]).optional(),
     bpjs_number: z.union([
         z.string(),
         z.null()
@@ -592,7 +596,7 @@ export const zWearableMeasurementDto = z.object({
         z.null()
     ]).optional(),
     id: z.string().uuid(),
-    patient_id: z.string().uuid(),
+    device_api_key: z.string().uuid(),
     created_at: z.string().datetime()
 });
 
@@ -600,6 +604,18 @@ export const zApiResponseWearableMeasurementDto = z.object({
     success: z.boolean(),
     data: z.union([
         zWearableMeasurementDto,
+        z.null()
+    ]).optional(),
+    message: z.union([
+        z.string(),
+        z.null()
+    ]).optional()
+});
+
+export const zApiResponseDict = z.object({
+    success: z.boolean(),
+    data: z.union([
+        z.object({}),
         z.null()
     ]).optional(),
     message: z.union([
@@ -1462,7 +1478,8 @@ export const zWearableMeasurementCreateDto = z.object({
     spo2: z.union([
         z.number().int(),
         z.null()
-    ]).optional()
+    ]).optional(),
+    device_api_key: z.string().uuid()
 });
 
 export const zLoginApiAuthLoginPostResponse = zApiResponseTokenDao;
@@ -1504,6 +1521,8 @@ export const zUpdateStaffProfileApiProfileStaffPatchResponse = zApiResponseUserP
 export const zUpdateDoctorProfileApiProfileDoctorPatchResponse = zApiResponseUserProfileDao;
 
 export const zUpdatePatientProfileApiProfilePatientPatchResponse = zApiResponseUserProfileDao;
+
+export const zRegenerateDeviceApiKeyApiProfilePatientDeviceApiKeyPostResponse = zApiResponseDict;
 
 export const zListVisitsApiVisitsGetResponse = zPaginatedApiResponseListVisitDto;
 

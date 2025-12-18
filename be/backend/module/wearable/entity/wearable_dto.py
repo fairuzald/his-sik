@@ -9,18 +9,18 @@ from pydantic import BaseModel, ConfigDict
 
 class WearableMeasurementBase(BaseModel):
     recorded_at: datetime
-    heart_rate: Optional[int] = None
+    heart_rate: Optional[float] = None
     body_temperature: Optional[float] = None
-    spo2: Optional[int] = None
+    spo2: Optional[float] = None
 
 
 class WearableMeasurementCreateDTO(WearableMeasurementBase):
-    pass
+    device_api_key: UUID
 
 
 class WearableMeasurementDTO(WearableMeasurementBase):
     id: UUID
-    patient_id: UUID
+    device_api_key: UUID
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)

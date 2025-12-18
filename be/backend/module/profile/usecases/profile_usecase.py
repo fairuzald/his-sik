@@ -177,3 +177,15 @@ class ProfileUseCase:
         user.photo_url = photo_url
         await self.user_repo.session.flush()
         return await self.get_profile(user)
+
+    async def regenerate_device_api_key(self, user: User) -> dict:
+        """Regenerate device API key for a patient."""
+        if user.role != RoleEnum.PATIENT:
+            raise BusinessLogicException("Only patients can have device API keys")
+
+        patient = await self.profile_repo.get_patient_by_user_id(user.id)
+        if not patient:
+            raise NotFoundException("Patient profile not found")
+
+        patient = await self.profile_repo.regenerate_patient_device_api_key(patient)
+        return {"device_api_key": str(patient.device_api_key)}

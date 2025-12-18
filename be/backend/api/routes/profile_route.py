@@ -76,3 +76,12 @@ async def update_patient_profile(
 ):
     """Update patient profile. Patient only."""
     return await handler.update_profile(req, user)
+
+
+@router.post("/patient/device-api-key", response_model=ApiResponse[dict], dependencies=[Depends(require_patient)])
+async def regenerate_device_api_key(
+    user: User = Depends(get_current_user),
+    handler: PatientProfileHandler = Depends()
+):
+    """Regenerate device API key for the patient. Patient only."""
+    return await handler.regenerate_device_api_key(user)

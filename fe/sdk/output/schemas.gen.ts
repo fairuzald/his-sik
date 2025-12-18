@@ -488,6 +488,41 @@ export const ApiResponse_WearableMeasurementDTO_Schema = {
     title: 'ApiResponse[WearableMeasurementDTO]'
 } as const;
 
+export const ApiResponse_dict_Schema = {
+    properties: {
+        success: {
+            type: 'boolean',
+            title: 'Success'
+        },
+        data: {
+            anyOf: [
+                {
+                    additionalProperties: true,
+                    type: 'object'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Data'
+        },
+        message: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Message'
+        }
+    },
+    type: 'object',
+    required: ['success'],
+    title: 'ApiResponse[dict]'
+} as const;
+
 export const BloodTypeEnumSchema = {
     type: 'string',
     enum: ['A', 'B', 'AB', 'O', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'],
@@ -2755,6 +2790,18 @@ export const PatientProfileDAOSchema = {
             type: 'string',
             title: 'Nik'
         },
+        device_api_key: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'uuid'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Device Api Key'
+        },
         bpjs_number: {
             anyOf: [
                 {
@@ -4291,10 +4338,15 @@ export const WearableMeasurementCreateDTOSchema = {
                 }
             ],
             title: 'Spo2'
+        },
+        device_api_key: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Device Api Key'
         }
     },
     type: 'object',
-    required: ['recorded_at'],
+    required: ['recorded_at', 'device_api_key'],
     title: 'WearableMeasurementCreateDTO'
 } as const;
 
@@ -4343,10 +4395,10 @@ export const WearableMeasurementDTOSchema = {
             format: 'uuid',
             title: 'Id'
         },
-        patient_id: {
+        device_api_key: {
             type: 'string',
             format: 'uuid',
-            title: 'Patient Id'
+            title: 'Device Api Key'
         },
         created_at: {
             type: 'string',
@@ -4355,6 +4407,6 @@ export const WearableMeasurementDTOSchema = {
         }
     },
     type: 'object',
-    required: ['recorded_at', 'id', 'patient_id', 'created_at'],
+    required: ['recorded_at', 'id', 'device_api_key', 'created_at'],
     title: 'WearableMeasurementDTO'
 } as const;

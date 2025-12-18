@@ -37,6 +37,7 @@ class Patient(Base):
     __tablename__ = "patients"
     id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(PG_UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False)
+    device_api_key = Column(PG_UUID(as_uuid=True), unique=True, nullable=True, default=None)
     nik = Column(String(16), unique=True, nullable=False)
     bpjs_number = Column(String(20))
     date_of_birth = Column(Date, nullable=False)

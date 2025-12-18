@@ -12,15 +12,21 @@ import {
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { safeApiCall } from "@/lib/api-handler";
-import { getMyProfileApiProfileMeGet } from "@/sdk/output/sdk.gen";
+import {
+  getMyProfileApiProfileMeGet,
+  regenerateDeviceApiKeyApiProfilePatientDeviceApiKeyPost,
+} from "@/sdk/output/sdk.gen";
 import { PatientProfileDao, UserProfileDao } from "@/sdk/output/types.gen";
-import { Edit, Loader2 } from "lucide-react";
+import { Check, Copy, Edit, Loader2, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 export default function PatientProfilePage() {
   const [profile, setProfile] = useState<UserProfileDao | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRegenerating, setIsRegenerating] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -32,6 +38,36 @@ export default function PatientProfilePage() {
     };
     fetchProfile();
   }, []);
+
+  const handleRegenerateApiKey = async () => {
+    setIsRegenerating(true);
+    const result = await safeApiCall(
+      regenerateDeviceApiKeyApiProfilePatientDeviceApiKeyPost()
+    );
+    if (result) {
+      toast.success("API Key Generated", {
+        description: "Your device API key has been successfully generated.",
+      });
+      // Refresh profile to get the new key
+      const updatedProfile = await safeApiCall(getMyProfileApiProfileMeGet());
+      if (updatedProfile) {
+        setProfile(updatedProfile);
+      }
+    }
+    setIsRegenerating(false);
+  };
+
+  const handleCopyApiKey = async () => {
+    const patientDetails = profile?.details as PatientProfileDao | undefined;
+    if (patientDetails?.device_api_key) {
+      await navigator.clipboard.writeText(patientDetails.device_api_key);
+      setCopied(true);
+      toast.success("Copied!", {
+        description: "Device API key copied to clipboard.",
+      });
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -178,6 +214,90 @@ export default function PatientProfilePage() {
                   {patientDetails?.address || "-"}
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-primary text-xl">
+                Device API Key
+              </CardTitle>
+              <CardDescription>
+                For connecting wearable devices and IoT health monitoring.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {patientDetails?.device_api_key ? (
+                <>
+                  <div className="space-y-2">
+                    <Label className="text-muted-foreground">API Key</Label>
+                    <div className="bg-muted/30 flex items-center gap-2 rounded-md border p-2">
+                      <code className="flex-1 break-all font-mono text-xs">
+                        {patientDetails.device_api_key}
+                      </code>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={handleCopyApiKey}
+                        className="shrink-0"
+                      >
+                        {copied ? (
+                          <Check className="h-4 w-4 text-green-600" />
+                        ) : (
+                          <Copy className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                  <Button
+                    onClick={handleRegenerateApiKey}
+                    disabled={isRegenerating}
+                    variant="outline"
+                    size="sm"
+                    className="w-full gap-2"
+                  >
+                    {isRegenerating ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Regenerating...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="h-4 w-4" />
+                        Regenerate API Key
+                      </>
+                    )}
+                  </Button>
+                  <p className="text-muted-foreground text-xs">
+                    ⚠️ Regenerating will invalidate the current key, disconnect
+                    all devices, and delete all existing measurements.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-muted-foreground text-sm">
+                    You don't have a device API key yet. Generate one to connect
+                    wearable devices.
+                  </p>
+                  <Button
+                    onClick={handleRegenerateApiKey}
+                    disabled={isRegenerating}
+                    className="w-full gap-2"
+                  >
+                    {isRegenerating ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="h-4 w-4" />
+                        Generate API Key
+                      </>
+                    )}
+                  </Button>
+                </>
+              )}
             </CardContent>
           </Card>
 

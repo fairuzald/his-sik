@@ -3,14 +3,14 @@ from datetime import datetime
 from typing import List, Optional, Tuple
 from uuid import UUID
 
-from backend.module.common.enums import RoleEnum
 from backend.module.wearable.entity.wearable import WearableMeasurement
 from backend.module.wearable.entity.wearable_dto import (
     WearableMeasurementCreateDTO,
 )
 from backend.module.wearable.repositories.wearable_repository import WearableRepository
 from backend.pkg.core.exceptions import (
-    AuthorizationException,
+    NotFoundException,
+    ValidationException,
 )
 
 
@@ -18,20 +18,15 @@ class WearableUseCase:
     def __init__(self, repository: WearableRepository):
         self.repository = repository
 
-    async def add_measurement(self, req: WearableMeasurementCreateDTO, user_id: UUID, role: str) -> WearableMeasurement:
-        if role != RoleEnum.PATIENT.value and role != RoleEnum.DOCTOR.value:
-             # Assuming purely manual entry or system.
-             # If role is patient, user_id is the patient.
-             pass
-
-        target_patient_id = user_id
-        # TODO: If Doctor adds measurement for patient, we need patient_id in request or params.
-        # For now, let's assume this endpoint is "Add MY measurement" for Patient.
-        if role == RoleEnum.DOCTOR.value:
-             raise AuthorizationException("Doctors cannot add wearable measurements via this endpoint yet.") # Simplify for now
+    async def add_measurement(self, req: WearableMeasurementCreateDTO) -> WearableMeasurement:
+        """Add a wearable measurement using device_api_key (public endpoint)."""
+        # Validate that device_api_key exists
+        patient = await self.repository.get_patient_by_device_api_key(req.device_api_key)
+        if not patient:
+            raise NotFoundException("Invalid device API key")
 
         measurement = WearableMeasurement(
-            patient_id=target_patient_id,
+            device_api_key=req.device_api_key,
             recorded_at=req.recorded_at,
             heart_rate=req.heart_rate,
             body_temperature=req.body_temperature,
@@ -43,26 +38,33 @@ class WearableUseCase:
         self,
         page: int,
         limit: int,
-        user_id: UUID,
-        role: str,
+        device_api_key: Optional[UUID] = None,
+        patient_id: Optional[UUID] = None,
         date_from: Optional[datetime] = None,
         date_to: Optional[datetime] = None,
-        patient_id_param: Optional[UUID] = None
     ) -> Tuple[List[WearableMeasurement], int]:
+        """
+        List measurements.
+        Either device_api_key OR patient_id must be provided.
+        - device_api_key: for public API (IoT devices)
+        - patient_id: for authenticated users (doctors, staff)
+        """
+        if not device_api_key and not patient_id:
+            raise ValidationException("Either device_api_key or patient_id must be provided")
 
-        target_patient_id = user_id
+        if device_api_key and patient_id:
+            raise ValidationException("Cannot provide both device_api_key and patient_id")
 
-        if role == RoleEnum.PATIENT.value:
-             target_patient_id = user_id
-        elif role == RoleEnum.DOCTOR.value:
-             if patient_id_param:
-                  target_patient_id = patient_id_param
-             else:
-                  # If Doctor queries without patient_id, usually error or invalid.
-                  # But `user_id` is doctor's ID.
-                  # Let's enforce patient_id_param for Doctors.
-                  if not patient_id_param:
-                       raise AuthorizationException("Doctor must specify patient_id")
-                  target_patient_id = patient_id_param
+        if device_api_key:
+            # Public API - validate device_api_key exists
+            patient = await self.repository.get_patient_by_device_api_key(device_api_key)
+            if not patient:
+                raise NotFoundException("Invalid device API key")
+            return await self.repository.list_measurements(device_api_key, page, limit, date_from, date_to)
 
-        return await self.repository.list_measurements(target_patient_id, page, limit, date_from, date_to)
+        if patient_id:
+            # Authenticated API - validate patient_id exists
+            patient = await self.repository.get_patient_by_id(patient_id)
+            if not patient:
+                raise NotFoundException("Patient not found")
+            return await self.repository.list_measurements_by_patient_id(patient_id, page, limit, date_from, date_to)

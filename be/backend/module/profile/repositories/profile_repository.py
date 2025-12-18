@@ -1,7 +1,8 @@
+import uuid
 from uuid import UUID
 
 from backend.module.profile.entity.models import Doctor, Patient, Staff
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
@@ -37,4 +38,26 @@ class ProfileRepository:
     async def create_patient(self, patient: Patient):
         self.session.add(patient)
         await self.session.flush()
+        return patient
+
+    async def regenerate_patient_device_api_key(self, patient: Patient) -> Patient:
+        """
+        Regenerate device_api_key for a patient.
+        This will delete all existing measurements for this patient since
+        regenerating the key invalidates the old device.
+        """
+        # Import here to avoid circular dependency
+        from backend.module.wearable.entity.wearable import WearableMeasurement
+
+        # Delete all existing measurements for this patient's old device_api_key
+        if patient.device_api_key:
+            delete_stmt = delete(WearableMeasurement).where(
+                WearableMeasurement.device_api_key == patient.device_api_key
+            )
+            await self.session.execute(delete_stmt)
+
+        # Generate new device_api_key
+        patient.device_api_key = uuid.uuid4()
+        await self.session.flush()
+        await self.session.refresh(patient)
         return patient
