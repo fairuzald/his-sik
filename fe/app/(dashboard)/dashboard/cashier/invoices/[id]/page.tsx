@@ -201,6 +201,41 @@ export default function CashierInvoiceDetailPage() {
                 />
               </div>
 
+              {parseFloat(amountPaid) > (invoice.total_amount || 0) && (
+                <div className="rounded bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 p-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-blue-800 dark:text-blue-200">Change:</span>
+                    <span className="text-lg font-bold text-blue-900 dark:text-blue-100">
+                      Rp {(parseFloat(amountPaid) - (invoice.total_amount || 0)).toLocaleString("id-ID")}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {invoice.payment_status === "paid" && (
+                <div className="space-y-3 border-t pt-4">
+                  <div className="rounded bg-gray-50 dark:bg-gray-900 p-4 space-y-2">
+                    <h4 className="font-semibold text-sm mb-3 text-gray-900 dark:text-white">Payment Summary</h4>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-700 dark:text-gray-200">Total Due:</span>
+                      <span className="font-medium text-gray-900 dark:text-white">Rp {invoice.total_amount?.toLocaleString("id-ID")}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-700 dark:text-gray-200">Amount Paid:</span>
+                      <span className="font-medium text-gray-900 dark:text-white">Rp {invoice.amount_paid?.toLocaleString("id-ID")}</span>
+                    </div>
+                    {invoice.amount_paid > invoice.total_amount && (
+                      <div className="flex justify-between text-sm pt-2 border-t">
+                        <span className="font-semibold text-blue-600 dark:text-blue-400">Change:</span>
+                        <span className="font-bold text-blue-600 dark:text-blue-400">
+                          Rp {(invoice.amount_paid - invoice.total_amount).toLocaleString("id-ID")}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-3 border-t pt-4">
                 {invoice.payment_status !== "paid" ? (
                   <Button

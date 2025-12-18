@@ -3,74 +3,68 @@
 import { H2, P } from "@/components/elements/typography";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { DataTable } from "@/components/ui/data-table";
 import { safeApiCall } from "@/lib/api-handler";
 import { listInvoicesApiInvoicesGet } from "@/sdk/output/sdk.gen";
 import { InvoiceDto } from "@/sdk/output/types.gen";
 import { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
-import { Download, Loader2 } from "lucide-react";
+import { Eye, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-// removed toast import
 
 export default function PatientBillingPage() {
-  const [data, setData] = useState<InvoiceDto[]>([]);
+  const [invoices, setInvoices] = useState<InvoiceDto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const fetchData = async () => {
-      const result = await safeApiCall(listInvoicesApiInvoicesGet(), {
-        errorMessage: "Failed to load invoices",
-      });
-      if (result) {
-        setData(result);
-      }
-      setIsLoading(false);
-    };
-    fetchData();
+    fetchInvoices();
   }, []);
+
+  const fetchInvoices = async () => {
+    setIsLoading(true);
+    const result = await safeApiCall(
+      listInvoicesApiInvoicesGet({ query: { limit: 100 } })
+    );
+    if (result) {
+      const invoicesList = Array.isArray(result)
+        ? result
+        : (result as any).data || [];
+      setInvoices(invoicesList);
+    }
+    setIsLoading(false);
+  };
 
   const columns: ColumnDef<InvoiceDto>[] = [
     {
       accessorKey: "created_at",
-      header: "Issued Date",
-      cell: ({ row }) => (
-        <span className="pl-4">
-          {row.original.created_at
-            ? format(new Date(row.original.created_at), "dd MMM yyyy")
-            : "-"}
-        </span>
-      ),
+      header: "Date",
+      cell: ({ row }) =>
+        format(new Date(row.original.created_at), "dd MMM yyyy"),
     },
     {
-      accessorKey: "id",
-      header: "Invoice ID",
+      accessorKey: "visit_id",
+      header: "Visit",
       cell: ({ row }) => (
         <span className="font-mono text-xs">
-          {row.original.id.substring(0, 8)}...
+          {row.original.visit_id.substring(0, 8)}...
         </span>
       ),
-    },
-    {
-      // We assume description or items might be fetched in details,
-      // or we check if items are returned in list.
-      // InvoiceDto usually has items array.
-      id: "items", // Virtual column if items exist
-      header: "Items (Count)",
-      cell: ({ row }) => {
-        const count = row.original.items?.length || 0;
-        return <span>{count} Items</span>;
-      },
     },
     {
       accessorKey: "total_amount",
-      header: "Amount",
+      header: "Total Amount",
       cell: ({ row }) => (
-        <span className="font-medium">
+        <span className="font-semibold">
           Rp {row.original.total_amount.toLocaleString("id-ID")}
         </span>
+      ),
+    },
+    {
+      accessorKey: "amount_paid",
+      header: "Amount Paid",
+      cell: ({ row }) => (
+        <span>Rp {row.original.amount_paid.toLocaleString("id-ID")}</span>
       ),
     },
     {
@@ -78,12 +72,17 @@ export default function PatientBillingPage() {
       header: "Status",
       cell: ({ row }) => {
         const status = row.original.payment_status;
-        let variant: "default" | "destructive" | "secondary" = "secondary";
-        if (status === "paid") variant = "default";
-        if (status === "unpaid") variant = "destructive";
-
         return (
-          <Badge variant={variant} className="capitalize">
+          <Badge
+            variant={status === "paid" ? "default" : "secondary"}
+            className={
+              status === "paid"
+                ? "bg-green-500"
+                : status === "unpaid"
+                  ? "bg-red-500"
+                  : ""
+            }
+          >
             {status}
           </Badge>
         );
@@ -91,26 +90,15 @@ export default function PatientBillingPage() {
     },
     {
       id: "actions",
+      header: "Actions",
       cell: ({ row }) => (
-        <div className="flex justify-end gap-2 pr-4">
-          <Button size="sm" variant="ghost" asChild>
-            <Link href={`/dashboard/patient/billing/${row.original.id}`}>
-              View Details
-            </Link>
-          </Button>
-          <Button size="sm" variant="ghost" disabled>
-            <Download className="h-4 w-4" />
-          </Button>
-        </div>
+        <Button variant="ghost" size="icon" asChild title="View Details">
+          <Link href={`/dashboard/patient/billing/${row.original.id}`}>
+            <Eye className="h-4 w-4" />
+          </Link>
+        </Button>
       ),
     },
-  ];
-
-  const filterOptions = [
-    { label: "Paid", value: "paid" },
-    { label: "Pending", value: "pending" },
-    { label: "Unpaid", value: "unpaid" },
-    { label: "Failed", value: "failed" },
   ];
 
   if (isLoading) {
@@ -122,29 +110,28 @@ export default function PatientBillingPage() {
   }
 
   return (
-    <div className="space-y-8 p-2">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <H2 className="text-primary text-3xl font-bold tracking-tight">
-            Billing & Invoices
-          </H2>
-          <P className="text-muted-foreground mt-1">
-            Manage your payments and view invoice history.
-          </P>
-        </div>
+    <div className="space-y-6 p-2">
+      <div>
+        <H2 className="text-primary text-3xl font-bold tracking-tight">
+          My Billing
+        </H2>
+        <P className="text-muted-foreground mt-1">
+          View your medical invoices and payment history
+        </P>
       </div>
 
-      <Card className="shadow-sm">
-        <CardContent>
-          <DataTable
-            columns={columns}
-            data={data}
-            searchKey="id"
-            filterKey="payment_status"
-            filterOptions={filterOptions}
-          />
-        </CardContent>
-      </Card>
+      <DataTable
+        columns={columns}
+        data={invoices}
+        searchKey="visit_id"
+        searchPlaceholder="Search by visit ID..."
+        filterKey="payment_status"
+        filterOptions={[
+          { label: "Unpaid", value: "unpaid" },
+          { label: "Paid", value: "paid" },
+          { label: "Canceled", value: "canceled" },
+        ]}
+      />
     </div>
   );
 }

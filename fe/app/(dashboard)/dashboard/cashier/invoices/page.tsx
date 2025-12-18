@@ -10,7 +10,7 @@ import { listInvoicesApiInvoicesGet } from "@/sdk/output/sdk.gen";
 import { InvoiceDto } from "@/sdk/output/types.gen";
 import { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
-import { CreditCard, Download, Loader2 } from "lucide-react";
+import { CreditCard, Download, Eye, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -69,21 +69,12 @@ const columns: ColumnDef<InvoiceDto>[] = [
     id: "actions",
     cell: ({ row }) => (
       <div className="flex justify-end gap-2">
-        {row.original.payment_status !== "paid" && (
-          <Button size="sm" className="gap-2" asChild>
-            <Link href={`/dashboard/cashier/invoices/${row.original.id}`}>
-              <CreditCard className="h-3 w-3" />
-              Pay
-            </Link>
-          </Button>
-        )}
-        {row.original.payment_status === "paid" && (
-          <Button size="sm" variant="ghost" asChild>
-            <Link href={`/dashboard/cashier/invoices/${row.original.id}`}>
-              <Download className="h-4 w-4" />
-            </Link>
-          </Button>
-        )}
+        <Button size="sm" variant="ghost" asChild>
+          <Link href={`/dashboard/cashier/invoices/${row.original.id}`}>
+            <Eye className="h-4 w-4 mr-1" />
+            View
+          </Link>
+        </Button>
       </div>
     ),
   },
@@ -120,13 +111,21 @@ export default function CashierInvoicesPage() {
 
   return (
     <div className="space-y-8 p-2">
-      <div>
-        <H2 className="text-primary text-3xl font-bold tracking-tight">
-          Invoices
-        </H2>
-        <P className="text-muted-foreground mt-1">
-          Manage patient billing and payments.
-        </P>
+      <div className="flex items-center justify-between">
+        <div>
+          <H2 className="text-primary text-3xl font-bold tracking-tight">
+            Invoices
+          </H2>
+          <P className="text-muted-foreground mt-1">
+            Manage patient billing and payments.
+          </P>
+        </div>
+        <Button asChild>
+          <Link href="/dashboard/cashier/invoices/new">
+            <CreditCard className="mr-2 h-4 w-4" />
+            Create Invoice
+          </Link>
+        </Button>
       </div>
 
       <Card className="shadow-sm">
