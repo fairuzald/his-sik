@@ -25,7 +25,6 @@ export const navItems: Record<string, NavItem[]> = {
   patient: [
     { title: "Dashboard", href: "/dashboard/patient", icon: LayoutDashboard },
     { title: "Profile", href: "/dashboard/patient/profile", icon: User },
-    { title: "Visits", href: "/dashboard/patient/visits", icon: Calendar },
     {
       title: "Medical Records",
       href: "/dashboard/patient/records",

@@ -78,7 +78,7 @@ export async function safeApiCall<TResponse extends ApiResponse>(
       msg = error.message;
     }
 
-    if (error?.errors.length > 0) {
+    if (error?.errors && Array.isArray(error.errors) && error.errors.length > 0) {
       msg = error.errors
         .map(
           (e: { field: string; message: string }) => e.field + ": " + e.message

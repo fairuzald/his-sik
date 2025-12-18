@@ -259,7 +259,12 @@ export function PrescriptionTab({
                             <FormItem>
                               <FormLabel className="text-xs">Qty</FormLabel>
                               <FormControl>
-                                <Input type="number" min={1} {...field} />
+                                <Input
+                                  type="number"
+                                  min={1}
+                                  {...field}
+                                  onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
+                                />
                               </FormControl>
                               <FormMessage />
                             </FormItem>

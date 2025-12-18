@@ -28,6 +28,7 @@ import { useEffect, useState } from "react";
 
 export default function PatientDashboard() {
   const [name, setName] = useState("");
+  const [patientId, setPatientId] = useState<string>("");
   const [visits, setVisits] = useState<VisitDto[]>([]);
   const [invoices, setInvoices] = useState<InvoiceDto[]>([]);
   const [prescriptions, setPrescriptions] = useState<PrescriptionDto[]>([]);
@@ -41,56 +42,91 @@ export default function PatientDashboard() {
     const loadDashboardData = async () => {
       // 1. Fetch Profile
       const profile = await safeApiCall(getMyProfileApiProfileMeGet());
-      if (profile) {
-        setName(profile.full_name.split(" ")[0]);
+      if (!profile) {
+        setIsLoading(false);
+        return;
       }
+
+      setName(profile.full_name.split(" ")[0]);
 
       // 2. Fetch Clinics (for mapping names)
       const clinicsData = await safeApiCall(listClinicsApiClinicsGet());
       const clinicMap: Record<string, string> = {};
       if (clinicsData) {
-        clinicsData.forEach((c: ClinicDto) => {
+        // Handle both array and wrapped response
+        const clinicsList = Array.isArray(clinicsData)
+          ? clinicsData
+          : (clinicsData as any).data || [];
+        clinicsList.forEach((c: ClinicDto) => {
           clinicMap[c.id] = c.name;
         });
         setClinics(clinicMap);
       }
 
-      // 3. Fetch Visits
-      const visitsData = await safeApiCall(listVisitsApiVisitsGet());
-      if (visitsData) {
-        setVisits(visitsData);
-      }
-
-      // 4. Fetch Invoices
-      const invoicesData = await safeApiCall(listInvoicesApiInvoicesGet());
-      if (invoicesData) {
-        setInvoices(invoicesData);
-      }
-
-      // 5. Fetch Prescriptions
-      const prescriptionsData = await safeApiCall(
-        listPrescriptionsApiPrescriptionsGet()
-      );
-      if (prescriptionsData) {
-        setPrescriptions(prescriptionsData);
-      }
-
-      // 6. Fetch Wearables measurements
-      const measurements = await safeApiCall(
-        listMeasurementsApiWearablesMeasurementsGet({
-          query: { limit: 10 },
+      // 3. Fetch Visits - backend filters by logged-in patient automatically
+      const visitsData = await safeApiCall(
+        listVisitsApiVisitsGet({
+          query: { limit: 100 }
         })
       );
-      if (measurements) {
-        // Transform for chart
-        const chartData = measurements
-          .map((m: WearableMeasurementDto) => ({
-            time: m.recorded_at ? format(new Date(m.recorded_at), "HH:mm") : "",
-            value: m.heart_rate || 0,
-          }))
-          .filter(d => d.value > 0)
-          .slice(-10); // Last 10 points
-        setHeartRateData(chartData);
+      if (visitsData) {
+        const visitsList = Array.isArray(visitsData)
+          ? visitsData
+          : (visitsData as any).data || [];
+        console.log("Visits from API:", visitsList);
+        setVisits(visitsList);
+      }
+
+      // 4. Fetch Invoices (backend filters automatically)
+      const invoicesData = await safeApiCall(
+        listInvoicesApiInvoicesGet({
+          query: {}
+        })
+      );
+      if (invoicesData) {
+        const invoicesList = Array.isArray(invoicesData)
+          ? invoicesData
+          : (invoicesData as any).data || [];
+        setInvoices(invoicesList);
+      }
+
+      // 5. Fetch Prescriptions (backend filters automatically)
+      const prescriptionsData = await safeApiCall(
+        listPrescriptionsApiPrescriptionsGet({
+          query: {}
+        })
+      );
+      if (prescriptionsData) {
+        const prescriptionsList = Array.isArray(prescriptionsData)
+          ? prescriptionsData
+          : (prescriptionsData as any).data || [];
+        setPrescriptions(prescriptionsList);
+      }
+
+      // 6. Fetch Wearables measurements (may fail if table schema not up to date)
+      try {
+        const measurements = await safeApiCall(
+          listMeasurementsApiWearablesMeasurementsGet({
+            query: { limit: 10 },
+          })
+        );
+        if (measurements) {
+          const measurementsList = Array.isArray(measurements)
+            ? measurements
+            : (measurements as any).data || [];
+          // Transform for chart
+          const chartData = measurementsList
+            .map((m: WearableMeasurementDto) => ({
+              time: m.recorded_at ? format(new Date(m.recorded_at), "HH:mm") : "",
+              value: m.heart_rate || 0,
+            }))
+            .filter((d: { time: string; value: number }) => d.value > 0)
+            .slice(-10); // Last 10 points
+          setHeartRateData(chartData);
+        }
+      } catch (error) {
+        console.log("Wearable measurements not available:", error);
+        // Silently handle error - wearable data is optional
       }
 
       setIsLoading(false);
@@ -100,19 +136,45 @@ export default function PatientDashboard() {
   }, []);
 
   // Compute Stats
+  const now = new Date();
+  console.log("Current time (now):", now);
+  console.log("Current time ISO:", now.toISOString());
+
+  // Show ONLY future, non-completed/non-canceled visits
   const upcomingVisits = visits
-    .filter(
-      v => v.visit_status !== "canceled" && v.visit_status !== "completed"
-    )
-    // Ideally filter by date > now, but assuming 'registered' or 'scheduled' for now.
-    // The API `VisitStatusEnum` has 'registered', 'examining', 'completed', 'canceled'.
-    // Assuming 'registered' is upcoming.
-    .sort(
-      (a, b) =>
-        new Date(a.visit_datetime || "").getTime() -
-        new Date(b.visit_datetime || "").getTime()
-    )
+    .filter(v => {
+      console.log("Checking visit:", {
+        id: v.id,
+        status: v.visit_status,
+        datetime: v.visit_datetime,
+        datetimeParsed: v.visit_datetime ? new Date(v.visit_datetime) : null,
+        isFuture: v.visit_datetime ? new Date(v.visit_datetime) > now : false
+      });
+
+      // Only non-completed/non-canceled
+      if (v.visit_status === "completed" || v.visit_status === "canceled") {
+        console.log("  -> Filtered out: completed or canceled");
+        return false;
+      }
+      // Only future visits
+      if (v.visit_datetime) {
+        const visitDate = new Date(v.visit_datetime);
+        const isFuture = visitDate > now;
+        console.log(`  -> Visit date: ${visitDate}, Is future: ${isFuture}`);
+        return isFuture;
+      }
+      console.log("  -> Filtered out: no datetime");
+      return false;
+    })
+    .sort((a, b) => {
+      // Sort by datetime
+      const dateA = new Date(a.visit_datetime || "").getTime();
+      const dateB = new Date(b.visit_datetime || "").getTime();
+      return dateA - dateB;
+    })
     .slice(0, 3);
+
+  console.log("Final upcoming visits:", upcomingVisits);
 
   const activePrescriptionsCount = prescriptions.filter(
     p =>
@@ -145,12 +207,6 @@ export default function PatientDashboard() {
             Here is your health summary for today.
           </P>
         </div>
-        <Button
-          className="w-full shadow-md transition-all hover:shadow-lg md:w-auto"
-          asChild
-        >
-          <Link href="/dashboard/patient/visits/new">Book Appointment</Link>
-        </Button>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
